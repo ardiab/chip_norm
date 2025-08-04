@@ -73,3 +73,46 @@ pytest -v
 - `get_covariate_dim()` returns 5 for both dataset classes, representing the number of covariates per replicate
 
 **No Issues Encountered:** The refactoring proceeded smoothly with all tests passing on first attempt after implementation.
+
+## Task Group 4: Implement the Unified Trainer
+
+### Implementation Success
+**Task Completion:** All tasks in Task Group 4 were implemented successfully with one minor issue that was quickly resolved.
+
+**Key Achievements:**
+- Created comprehensive test suite for the unified `Trainer` class in `tests/training/test_trainer.py`
+- Successfully refactored `compute_residual_mse` function to `replicate_concordance_mse_loss` with new signature that accepts model outputs and batch dictionaries
+- Implemented unified `Trainer` class in `chipvi/training/trainer.py` that encapsulates complete training and validation loops
+- The trainer successfully orchestrates forward pass, loss calculation, and backpropagation using the new dictionary-based data format
+
+**Issue Encountered and Resolved:**
+**Problem:** Initial test failed with `ValueError: too many values to unpack (expected 2)` when trying to unpack model outputs.
+**Root Cause:** The mock model in the test was a simple `nn.Linear` that returns only one output tensor, but the Trainer expects two outputs (mu and r) like the real `TechNB_mu_r` model.
+**Solution:** Created a proper `MockModel` class that returns two outputs like the real model:
+```python
+class MockModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(5, 2)
+    
+    def forward(self, x):
+        outputs = self.linear(x)
+        mu = torch.exp(outputs[:, 0:1])  # Ensure positive mu
+        r = torch.exp(outputs[:, 1:2])   # Ensure positive r
+        return mu, r
+```
+
+**Testing Results:** 
+```bash
+pytest -v
+# 5 tests passed successfully, including the new trainer test
+```
+
+**Key Implementation Details:**
+- `Trainer.fit()` method runs training for specified number of epochs with logging
+- `_train_one_epoch()` handles forward pass for both replicates, loss calculation, backpropagation, and parameter updates
+- `_validate_one_epoch()` performs validation with gradients disabled
+- `_move_batch_to_device()` utility method recursively moves all tensors in batch dictionaries to specified device
+- The trainer successfully works with the dictionary-based batch structure from the refactored datasets
+
+**No Major Issues Encountered:** After resolving the mock model issue, all functionality worked as expected with all tests passing.

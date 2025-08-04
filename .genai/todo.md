@@ -141,7 +141,7 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
     *   **Test Case Description:** Write a test named `test_residual_mse_loss_calculation`. This test must:
         *   Create simple `torch.Tensor` inputs: `y_r1 = torch.tensor([10.0, 20.0])`, `mu_tech_r1 = torch.tensor([4.0, 12.0])`, `y_r2 = torch.tensor([15.0, 25.0])`, `mu_tech_r2 = torch.tensor([5.0, 15.0])`, and `sd_ratio = torch.tensor([1.0, 1.0])`.
         *   Calculate the residuals: `r1_residual` should be `[6.0, 8.0]`. `r2_residual` should be `[10.0, 10.0]`.
-        *   Calculate the expected MSE: `mean(( [6, 8] - [10, 10] )^2)` which is `mean( [-4, -2]^2 )` = `mean([16, 4])` = `10.0`.
+        *   Calculate the expected MSE: `mean(( [6, 8] - [10, 10] )^2)` which is `mean([ -4, -2]^2 )` = `mean([16, 4])` = `10.0`.
         *   Call a new (not-yet-created) `compute_residual_mse` function with these tensors.
         *   Assert that the function returns a value approximately equal to `10.0`.
 
@@ -226,11 +226,11 @@ This task group will refactor `MultiReplicateDataset` to return a structured dic
 
 ---
 
-### Task Group 4: Implement the Unified Trainer
+### Task Group 4: Implement the Unified Trainer ✅ COMPLETED
 
 This task group will create the new `Trainer` class and refactor the custom loss logic into a standalone, testable function that the trainer will use.
 
-1.  **Define a test for the new `Trainer` class:** Create a new file at `tests/training/test_trainer.py`.
+1.  ✅ **Define a test for the new `Trainer` class:** Create a new file at `tests/training/test_trainer.py`.
     *   **Test Case Description:** Write a test named `test_trainer_completes_one_epoch`. This test must:
         *   Create a mock model (e.g., a simple `nn.Linear` model).
         *   Create mock `DataLoaders` for training and validation that yield the new dictionary-based batch structure. The data can be simple random tensors.
@@ -240,7 +240,7 @@ This task group will create the new `Trainer` class and refactor the custom loss
         *   Assert that the `fit()` method completes without errors.
         *   Assert that the model's parameters have been updated after the training step (i.e., they are different from their initial values).
 
-2.  **Refactor the custom loss function to a more generic interface:** In `chipvi/training/losses.py`, modify the `compute_residual_mse` function.
+2.  ✅ **Refactor the custom loss function to a more generic interface:** In `chipvi/training/losses.py`, modify the `compute_residual_mse` function.
     *   **Modify the function signature** to accept the model's output and the batch dictionary directly. This decouples the loss from the main training loop.
         ```python
         import torch
@@ -256,7 +256,7 @@ This task group will create the new `Trainer` class and refactor the custom loss
         *   Extract the predicted means (`.mean`) from the distribution objects in `model_outputs`.
         *   Calculate the residuals and the final MSE scalar, just as before. Return the MSE tensor.
 
-3.  **Create the unified `Trainer` class:** Create a new file at `chipvi/training/trainer.py`.
+3.  ✅ **Create the unified `Trainer` class:** Create a new file at `chipvi/training/trainer.py`.
     *   **Provide the following class and method signatures:**
         ```python
         from typing import Callable
@@ -311,8 +311,12 @@ This task group will create the new `Trainer` class and refactor the custom loss
         *   Return the average loss for the epoch.
     *   **Implementation Logic for `_validate_one_epoch`**: This is similar to `_train_one_epoch` but wrapped in a `with torch.no_grad():` block, sets the model to `self.model.eval()`, and does not perform backpropagation or optimizer steps.
 
-4.  **Run tests:** Run `pytest` from the root directory.
+4.  ✅ **Run tests:** Run `pytest` from the root directory.
     *   The new test `test_trainer_completes_one_epoch` should pass, confirming that the trainer can successfully orchestrate the forward pass, loss calculation, and backpropagation using the new dictionary-based data format.
+5.  ✅ **(REVIEW) Modify loss function:** In `chipvi/training/losses.py`, refactor the `replicate_concordance_mse_loss` function to call the `compute_residual_mse` function.
+6.  ✅ **(REVIEW) Modify trainer class:** In `chipvi/training/trainer.py`, remove the `.squeeze()` calls from the `model_outputs` dictionary creation in the `_train_one_epoch` and `_validate_one_epoch` methods.
+7.  ✅ **(REVIEW) Modify trainer class:** In `chipvi/training/trainer.py`, simplify the `_move_batch_to_device` function to be a non-recursive function.
+8.  ✅ **(REVIEW) Run tests:** Run `pytest` from the root directory and ensure all tests pass.
 
 ---
 
@@ -570,5 +574,6 @@ This task group will address the "Gradient Masking," "Arbitrary Value Replacemen
     *   How to download new data using `scripts/download_data.py`.
 
 7.  **Run all tests:** Run `pytest` from the root directory. All tests should continue to pass, confirming that our final cleanup has not introduced any regressions.
+
 
 ---
