@@ -164,11 +164,11 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
 
 ---
 
-### Task Group 3: Refactor `Dataset` and Data Loading Logic
+### Task Group 3: Refactor `Dataset` and Data Loading Logic ✅ COMPLETED
 
 This task group will refactor `MultiReplicateDataset` to return a structured dictionary instead of a flat tensor, and adjust the `build_datasets` function accordingly.
 
-1.  **Define a new test for the refactored `MultiReplicateDataset`:** In `tests/data/test_datasets.py`, add a new test case for the *target* behavior.
+1.  ✅ **Define a new test for the refactored `MultiReplicateDataset`:** In `tests/data/test_datasets.py`, add a new test case for the *target* behavior.
     *   **Test Case Description:** Write a test named `test_refactored_multireplicatedataset_returns_structured_dict`. This test must:
         *   Create the same small, identifiable `torch.Tensor` objects for the dataset inputs as in the previous task group.
         *   Instantiate `MultiReplicateDataset` with these tensors. (Note: The test will fail until the class is refactored).
@@ -180,7 +180,7 @@ This task group will refactor `MultiReplicateDataset` to return a structured dic
         *   Perform the same assertions for `item['r2']`.
         *   Assert that `item['metadata']['sd_ratio']` contains the correct value.
 
-2.  **Refactor `MultiReplicateDataset`:** In `chipvi/data/datasets.py`, modify the `MultiReplicateDataset` class.
+2.  ✅ **Refactor `MultiReplicateDataset`:** In `chipvi/data/datasets.py`, modify the `MultiReplicateDataset` class.
     *   **Keep the `__init__` signature and logic the same for now.** It will still accept the long list of tensors.
     *   **Remove the `self.covariates` and `self.experiment_reads` attributes** that stack the tensors.
     *   **Modify the `__getitem__` method:** Change the implementation to construct and return a nested dictionary for the given `idx` as specified in the test above.
@@ -213,14 +213,14 @@ This task group will refactor `MultiReplicateDataset` to return a structured dic
         ```
     *   **Modify the `get_dim_x` method:** This method is now ambiguous. Change it to `get_covariate_dim` and have it return the number of covariates for a *single* replicate (i.e., 5).
 
-3.  **Refactor `SingleReplicateDataset` for consistency:** In `chipvi/data/datasets.py`, modify the `SingleReplicateDataset` class.
+3.  ✅ **Refactor `SingleReplicateDataset` for consistency:** In `chipvi/data/datasets.py`, modify the `SingleReplicateDataset` class.
     *   **Remove the `self.covariates` attribute.**
     *   **Modify the `__getitem__` method** to return a dictionary: `{'covariates': ..., 'reads': ...}`.
     *   **Rename `get_dim_x` to `get_covariate_dim`**.
 
-4.  **Clean up old tests:** In `tests/data/test_datasets.py`, **delete** the now-obsolete test `test_multireplicatedataset_getitem_structure`, as it validates the old, brittle design.
+4.  ✅ **Clean up old tests:** In `tests/data/test_datasets.py`, **delete** the now-obsolete test `test_multireplicatedataset_getitem_structure`, as it validates the old, brittle design.
 
-5.  **Run tests:** Run `pytest` from the root directory.
+5.  ✅ **Run tests:** Run `pytest` from the root directory.
     *   The new test `test_refactored_multireplicatedataset_returns_structured_dict` should now pass.
     *   All other existing tests should continue to pass.
 

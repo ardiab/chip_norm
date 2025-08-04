@@ -310,36 +310,38 @@ class MultiReplicateDataset(Dataset):
                 self.grp_idxs[experiment_seq_depth_r1 == seq_depth] = idx
 
         self.n_covariates_per_replicate = 5
-        self.covariates = torch.stack(
-            [
-                self.control_reads_r1,
-                self.control_mapq_r1,
-                self.control_seq_depth_r1,
-                self.experiment_mapq_r1,
-                self.experiment_seq_depth_r1,
-                self.control_reads_r2,
-                self.control_mapq_r2,
-                self.control_seq_depth_r2,
-                self.experiment_mapq_r2,
-                self.experiment_seq_depth_r2,
-                self.grp_idxs,
-            ],
-            dim=1,
-        )
 
-        self.experiment_reads = torch.stack(
-            [self.experiment_reads_r1, self.experiment_reads_r2, self.exp_sd_ratio],
-            dim=1,
-        )
-
-    def get_dim_x(self) -> int:
+    def get_covariate_dim(self) -> int:
+        """Return the number of covariates for a single replicate."""
         return self.n_covariates_per_replicate
 
     def __len__(self) -> int:
         return len(self.experiment_reads_r1)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        return self.covariates[idx], self.experiment_reads[idx]
+    def __getitem__(self, idx: int) -> dict:
+        """Return a structured dictionary for the given index."""
+        r1_covariates = torch.stack([
+            self.control_reads_r1[idx],
+            self.control_mapq_r1[idx],
+            self.control_seq_depth_r1[idx],
+            self.experiment_mapq_r1[idx],
+            self.experiment_seq_depth_r1[idx],
+        ])
+        r2_covariates = torch.stack([
+            self.control_reads_r2[idx],
+            self.control_mapq_r2[idx],
+            self.control_seq_depth_r2[idx],
+            self.experiment_mapq_r2[idx],
+            self.experiment_seq_depth_r2[idx],
+        ])
+        return {
+            'r1': {'covariates': r1_covariates, 'reads': self.experiment_reads_r1[idx]},
+            'r2': {'covariates': r2_covariates, 'reads': self.experiment_reads_r2[idx]},
+            'metadata': {
+                'sd_ratio': self.exp_sd_ratio[idx],
+                'grp_idx': self.grp_idxs[idx],
+            }
+        }
 
 
 class SingleReplicateDataset(Dataset):
@@ -359,17 +361,21 @@ class SingleReplicateDataset(Dataset):
         self.experiment_mapq = experiment_mapq
         self.experiment_seq_depth = experiment_seq_depth
 
-        self.covariates = torch.stack(
-            [self.control_reads, self.control_mapq, self.control_seq_depth, self.experiment_mapq, self.experiment_seq_depth],
-            dim=1,
-        )
-
-    def get_dim_x(self) -> int:
-        return self.covariates.shape[1]
+    def get_covariate_dim(self) -> int:
+        """Return the number of covariates."""
+        return 5
 
     def __len__(self) -> int:
         return len(self.experiment_reads)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        return self.covariates[idx], self.experiment_reads[idx]
+    def __getitem__(self, idx: int) -> dict:
+        """Return a dictionary with covariates and reads."""
+        covariates = torch.stack([
+            self.control_reads[idx],
+            self.control_mapq[idx],
+            self.control_seq_depth[idx],
+            self.experiment_mapq[idx],
+            self.experiment_seq_depth[idx]
+        ])
+        return {'covariates': covariates, 'reads': self.experiment_reads[idx]}
 

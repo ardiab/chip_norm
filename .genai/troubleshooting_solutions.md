@@ -47,3 +47,29 @@ pytest tests/data/test_preprocessing.py tests/data/test_datasets.py tests/traini
 ```
 
 **No Issues Encountered:** The implementation proceeded smoothly with proper module structure and import paths working correctly.
+
+## Task Group 3: Refactor Dataset and Data Loading Logic
+
+### Implementation Success
+**Task Completion:** All tasks in Task Group 3 were implemented successfully without major issues.
+
+**Key Achievements:**
+- Successfully refactored `MultiReplicateDataset` to return structured dictionaries instead of flat tensors, improving code clarity and maintainability
+- Updated `__getitem__` method to return nested dictionary structure: `{'r1': {'covariates': ..., 'reads': ...}, 'r2': {...}, 'metadata': {...}}`
+- Refactored `SingleReplicateDataset` for consistency, returning `{'covariates': ..., 'reads': ...}` dictionary structure
+- Renamed `get_dim_x` to `get_covariate_dim` in both dataset classes for better semantic clarity
+- Removed obsolete test and added comprehensive test for new dictionary-based structure
+- All existing tests continue to pass, confirming no regressions were introduced
+
+**Testing Results:** 
+```bash
+pytest -v
+# 4 tests passed successfully, including the new refactored dataset test
+```
+
+**Key Implementation Details:**
+- `MultiReplicateDataset.__getitem__` now constructs covariates tensors on-demand rather than pre-computing and storing them
+- The new structure eliminates the need for downstream code to perform index-based slicing to separate replicate data
+- `get_covariate_dim()` returns 5 for both dataset classes, representing the number of covariates per replicate
+
+**No Issues Encountered:** The refactoring proceeded smoothly with all tests passing on first attempt after implementation.
