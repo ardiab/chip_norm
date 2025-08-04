@@ -1,6 +1,7 @@
 """Loss functions for ChipVI training."""
 
 import torch
+from torch import nn
 
 
 def compute_residual_mse(
@@ -31,3 +32,26 @@ def compute_residual_mse(
     mse = torch.mean((r1_residual - r2_residual_scaled) ** 2)
     
     return mse
+
+
+def replicate_concordance_mse_loss(model_outputs: dict, batch: dict) -> torch.Tensor:
+    """Compute replicate concordance MSE loss from model outputs and batch.
+    
+    Args:
+        model_outputs: Dictionary with structure {'r1': {'mu': ..., 'r': ...}, 'r2': {...}}
+        batch: Dictionary from MultiReplicateDataset with replicate data and metadata
+        
+    Returns:
+        MSE loss tensor
+    """
+    # Extract observed reads from batch
+    y_r1 = batch['r1']['reads']
+    y_r2 = batch['r2']['reads']
+    sd_ratio_r1_to_r2 = batch['metadata']['sd_ratio']
+    
+    # Extract predicted means from model outputs
+    mu_tech_r1 = model_outputs['r1']['mu']
+    mu_tech_r2 = model_outputs['r2']['mu']
+    
+    # Use the compute_residual_mse function
+    return compute_residual_mse(y_r1, mu_tech_r1, y_r2, mu_tech_r2, sd_ratio_r1_to_r2)
