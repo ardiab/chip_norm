@@ -1,14 +1,14 @@
-### Task Group 1: Establish Configuration-Driven Path Management
+### Task Group 1: Establish Configuration-Driven Path Management ✅ COMPLETED
 
 This task group addresses the "Hardcoded, Non-Portable File Paths" finding by introducing a configuration system that will manage all file paths, making the project portable and easier to manage.
 
-1.  **Create new directories:** In the project's root directory, create two new top-level directories:
+1.  ✅ **Create new directories:** In the project's root directory, create two new top-level directories:
     *   `configs/`
     *   `outputs/`
 
-2.  **Add project dependencies:** Add `hydra-core` and `pytest` to your project's dependency management file (e.g., `requirements.txt` or `pyproject.toml`).
+2.  ✅ **Add project dependencies:** Add `hydra-core` and `pytest` to your project's dependency management file (e.g., `requirements.txt` or `pyproject.toml`).
 
-3.  **Create the main configuration file:** In the new `configs/` directory, create a file named `config.yaml` with the following content. This file will define the base structure for all paths.
+3.  ✅ **Create the main configuration file:** In the new `configs/` directory, create a file named `config.yaml` with the following content. This file will define the base structure for all paths.
 
     ```yaml
     # configs/config.yaml
@@ -43,14 +43,14 @@ This task group addresses the "Hardcoded, Non-Portable File Paths" finding by in
     
     ```
 
-4.  **Create a test for the new `PathHelper`:** Create a new test file at `tests/utils/test_path_helper.py`.
+4.  ✅ **Create a test for the new `PathHelper`:** Create a new test file at `tests/utils/test_path_helper.py`.
     *   **Test Case Description:** Write a test named `test_path_helper_resolves_paths_from_config`. This test should:
         *   Use Hydra's `compose` API to load the `configs/config.yaml` into a configuration object (`DictConfig`).
         *   Instantiate the (not-yet-refactored) `PathHelper` class with this configuration object.
         *   Assert that the `raw_data_dir` attribute of the `PathHelper` instance correctly resolves to the absolute path of the `data/raw` directory.
         *   Assert that the `entex_proc_file_dir` attribute resolves to the absolute path of the `data/entex_files/proc` directory.
 
-5.  **Refactor `PathHelper` to be configuration-driven:** In `chipvi/utils/path_helper.py`, modify the `PathHelper` class.
+5.  ✅ **Refactor `PathHelper` to be configuration-driven:** In `chipvi/utils/path_helper.py`, modify the `PathHelper` class.
     *   **Remove all hardcoded `Path` objects** currently defined as class variables.
     *   **Modify the class signature** to accept a configuration object in its constructor. The new signature should be:
         ```python
@@ -62,7 +62,7 @@ This task group addresses the "Hardcoded, Non-Portable File Paths" finding by in
         ```
     *   **Implementation Logic:** Inside the `__init__` method, read the path values from the `cfg.paths` object and assign them as instance attributes (e.g., `self.raw_data_dir = Path(cfg.paths.data_raw)`). Create attributes for all the critical paths the application will need.
 
-6.  **Create a new primary script entry point:** Create a new file at `scripts/run.py`. This script will serve as the new entry point for running experiments and will demonstrate the use of the new configuration system.
+6.  ✅ **Create a new primary script entry point:** Create a new file at `scripts/run.py`. This script will serve as the new entry point for running experiments and will demonstrate the use of the new configuration system.
     *   **Provide the following function signature and implementation logic:**
         ```python
         import hydra
@@ -92,7 +92,7 @@ This task group addresses the "Hardcoded, Non-Portable File Paths" finding by in
 
         ```
 
-7.  **Run tests:** Run `pytest` from the root directory and ensure the new `test_path_helper_resolves_paths_from_config` test passes. You can also run `python scripts/run.py` to see the configuration-driven path resolution in action.
+7.  ✅ **Run tests:** Run `pytest` from the root directory and ensure the new `test_path_helper_resolves_paths_from_config` test passes. You can also run `python scripts/run.py` to see the configuration-driven path resolution in action.
 
 ---
 
