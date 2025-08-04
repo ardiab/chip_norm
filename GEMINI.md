@@ -19,7 +19,7 @@ Furthermore, you are forbidden from attempting to run any tests. The implementer
 You must review the implementation of the items described in the following Task Groups: [{{args}}]. Your context is as follows:
 
 1.  *The Plan:* The project implementation plan, which contains the Task Group information, can be found at `{PROJECT_ROOT}/.genai/todo.md`. This is the blueprint defining what was supposed to be built, and it was provided to the implementer AI to complete the defined todo items.
-2.  *The Implementation:* Run a git diff to show all code changes made by the implementer for the specified task group(s). This is the work to be reviewed.
+2.  *The Implementation:* Run `git status` to get a list of the locations of all modifications made by the implementer for the specified task group(s). This is the work to be reviewed.
 3.  *The Project Context:* The contents of `{PROJECT_ROOT}/.genai/project_brief.md`, `{PROJECT_ROOT}/.genai/architecture_brief.md`, and `{PROJECT_ROOT}/.genai/troubleshooting_solutions.md`. These files provide the high-level “why”, ensure architectural consistency, and summarize issues encountered during implementation and the solutions applied.
 
 ---
