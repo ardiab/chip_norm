@@ -96,13 +96,13 @@ This task group addresses the "Hardcoded, Non-Portable File Paths" finding by in
 
 ---
 
-### Task Group 2: Build Foundational Test Suite for Critical Components
+### Task Group 2: Build Foundational Test Suite for Critical Components ✅ COMPLETED
 
 This task group addresses the "Insufficient Test Coverage" finding by creating tests for data aggregation, dataset structure, and custom loss calculations.
 
-1.  **Create new test file for data processing:** Create a new file at `tests/data/test_preprocessing.py`.
+1.  ✅ **Create new test file for data processing:** Create a new file at `tests/data/test_preprocessing.py`.
 
-2.  **Define test for bin aggregation:** In `tests/data/test_preprocessing.py`, write a test case to validate the bin aggregation logic.
+2.  ✅ **Define test for bin aggregation:** In `tests/data/test_preprocessing.py`, write a test case to validate the bin aggregation logic.
     *   **Test Case Description:** Write a test named `test_aggregate_bins_correctly_sums_and_averages`. This test must:
         *   Create a simple `numpy` array representing 16 bins of high-resolution "reads" data (e.g., `np.arange(16)`).
         *   Create a corresponding `numpy` array for "mapq" data.
@@ -110,7 +110,7 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
         *   Assert that the output "reads" array has a length of 2 and that its values are the correct sums of the original 8-bin windows (i.e., `[56, 72]`).
         *   Assert that the output "mapq" array has a length of 2 and that its values are the correct means of the original 8-bin windows.
 
-3.  **Create new preprocessing module and function:** Create a new file at `chipvi/data/preprocessing.py`.
+3.  ✅ **Create new preprocessing module and function:** Create a new file at `chipvi/data/preprocessing.py`.
     *   **Provide the following function signature:**
         ```python
         import numpy as np
@@ -124,9 +124,9 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
         ```
     *   **Implementation Logic:** Port the aggregation logic currently found inside the `load_data` function in `runs/06_27_bigger_200bp/train.py` into this function. The logic should first trim the array to be divisible by `agg_factor`, then reshape it, and finally perform either a sum or a mean along the appropriate axis.
 
-4.  **Create new test file for datasets:** Create a new file at `tests/data/test_datasets.py`.
+4.  ✅ **Create new test file for datasets:** Create a new file at `tests/data/test_datasets.py`.
 
-5.  **Define test for `MultiReplicateDataset` structure:** In `tests/data/test_datasets.py`, write a test case to verify the output of the *existing* `MultiReplicateDataset`.
+5.  ✅ **Define test for `MultiReplicateDataset` structure:** In `tests/data/test_datasets.py`, write a test case to verify the output of the *existing* `MultiReplicateDataset`.
     *   **Test Case Description:** Write a test named `test_multireplicatedataset_getitem_structure`. This test must:
         *   Create small, distinct `torch.Tensor` objects for each of the 13 required inputs to the `MultiReplicateDataset` constructor (e.g., `control_reads_r1`, `experiment_reads_r1`, etc.). Use, for example, `torch.ones(10)`, `torch.zeros(10)`, `torch.full((10,), 2.0)`, etc., to make each input identifiable.
         *   Instantiate `MultiReplicateDataset` with these tensors.
@@ -135,9 +135,9 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
         *   Assert that the first five values of the covariate tensor correctly correspond to the five `replicate_1` input tensors. For example, assert that `covariates[0]` is `1.0` (from `control_reads_r1`), `covariates[1]` is `...` and so on.
         *   Assert that the experiment reads tensor returned has the expected shape (`3,`) and that its values correspond to the correct inputs (`experiment_reads_r1`, `experiment_reads_r2`, and the seq depth ratio).
 
-6.  **Create new test file for losses:** Create a new file at `tests/training/test_losses.py`.
+6.  ✅ **Create new test file for losses:** Create a new file at `tests/training/test_losses.py`.
 
-7.  **Define test for biological concordance loss:** In `tests/training/test_losses.py`, write a test case to validate the MSE-based loss term.
+7.  ✅ **Define test for biological concordance loss:** In `tests/training/test_losses.py`, write a test case to validate the MSE-based loss term.
     *   **Test Case Description:** Write a test named `test_residual_mse_loss_calculation`. This test must:
         *   Create simple `torch.Tensor` inputs: `y_r1 = torch.tensor([10.0, 20.0])`, `mu_tech_r1 = torch.tensor([4.0, 12.0])`, `y_r2 = torch.tensor([15.0, 25.0])`, `mu_tech_r2 = torch.tensor([5.0, 15.0])`, and `sd_ratio = torch.tensor([1.0, 1.0])`.
         *   Calculate the residuals: `r1_residual` should be `[6.0, 8.0]`. `r2_residual` should be `[10.0, 10.0]`.
@@ -145,7 +145,7 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
         *   Call a new (not-yet-created) `compute_residual_mse` function with these tensors.
         *   Assert that the function returns a value approximately equal to `10.0`.
 
-8.  **Create new loss module and function:** Create a new file at `chipvi/training/losses.py`.
+8.  ✅ **Create new loss module and function:** Create a new file at `chipvi/training/losses.py`.
     *   **Provide the following function signature:**
         ```python
         import torch
@@ -160,7 +160,7 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
         ```
     *   **Implementation Logic:** Port the logic for calculating the scaled residual MSE from one of the training scripts (e.g., `runs/06_27_bigger_200bp/train.py`, line 211).
 
-9.  **Run tests:** Run `pytest` from the root directory and ensure all new tests pass.
+9.  ✅ **Run tests:** Run `pytest` from the root directory and ensure all new tests pass.
 
 ---
 
