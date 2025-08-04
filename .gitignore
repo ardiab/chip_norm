@@ -1,0 +1,10 @@
+/data/
+*.pt
+*.pkl
+*.npy
+*.json
+*.pyc
+.DS_Store
+
+# Weird files, probably from mounting
+._*
