@@ -1,0 +1,29 @@
+# configs/config.yaml
+
+# Defaults for Hydra
+defaults:
+  - _self_
+
+# Define the core directory structure.
+# Paths can be defined relative to the project root or as absolute paths.
+# Using environment variables (e.g., ${oc.env:MY_PROJECT_ROOT}) is encouraged for portability.
+paths:
+  # Using Hydra's built-in original working directory resolver
+  project_root: ${hydra:runtime.cwd}
+  
+  # Data directories
+  data_base: ${paths.project_root}/data
+  data_raw: ${paths.data_base}/raw
+  data_processed: ${paths.data_base}/processed
+
+  # Large file storage (e.g., ENTEx)
+  entex_base: ${paths.data_base}/entex_files
+  entex_raw: ${paths.entex_base}/raw
+  entex_processed: ${paths.entex_base}/proc
+
+  # Hydra will automatically manage the output directory
+  outputs: ${hydra:run.dir}
+
+# Placeholder for experiment-specific configs
+experiment:
+  name: "default_experiment"
