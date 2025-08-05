@@ -9,3 +9,4 @@
 ._*
 .pytest_cache/
 package-lock.json
+*.egg-info/

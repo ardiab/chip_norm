@@ -1,28 +1,21 @@
-# Start from a stable Ubuntu LTS release
-FROM ubuntu:22.04
-
-# Avoid interactive prompts during build
-ENV DEBIAN_FRONTEND=noninteractive
+FROM node:20
 
 ARG TZ
 ENV TZ="$TZ"
 
 ARG CLAUDE_CODE_VERSION=latest
 
-# Install basic dependencies, including curl and gnupg for adding repositories
+# Install basic development tools and iptables/ipset
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  sudo \
-  git \
-  zsh \
-  curl \
-  wget \
-  gnupg \
-  ca-certificates \
   less \
+  git \
   procps \
+  sudo \
   fzf \
+  zsh \
   man-db \
   unzip \
+  gnupg2 \
   gh \
   iptables \
   ipset \
@@ -34,26 +27,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   vim \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# --- Install Node.js and npm ---
-# The official Ubuntu repos have an old version, so we use the NodeSource repository
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-RUN apt-get update && apt-get install -y nodejs
+# Ensure default node user has access to /usr/local/share
+RUN mkdir -p /usr/local/share/npm-global && \
+  chown -R node:node /usr/local/share
 
-# --- Create a non-root user named "node" ---
-# We create the user with UID/GID 1000, which is standard
-RUN groupadd --gid 1000 node && \
-    useradd --uid 1000 --gid 1000 --m --shell /bin/zsh node && \
-    usermod -aG sudo node
-# Set up passwordless sudo for the new user
-RUN echo "node ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/node
+ARG USERNAME=node
 
 # Persist bash history.
-RUN mkdir /commandhistory && \
-    touch /commandhistory/.bash_history && \
-    chown -R node:node /commandhistory
+RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
+  && mkdir /commandhistory \
+  && touch /commandhistory/.bash_history \
+  && chown -R $USERNAME /commandhistory
 
-# Set `DEVCONTAINER` environment variable
+# Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories and set permissions
@@ -63,25 +49,30 @@ RUN mkdir -p /workspace /home/node/.claude && \
 WORKDIR /workspace
 
 ARG GIT_DELTA_VERSION=0.18.2
-# This command is robust; it will correctly report "amd64" inside the emulated container
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
-# --- Switch to the non-root user ---
+# Set up non-root user
 USER node
+
+# Install global packages
+ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
+ENV PATH=$PATH:/usr/local/share/npm-global/bin
+
+# Set the default shell to zsh rather than sh
+ENV SHELL=/bin/zsh
+
+# Set the default editor and visual
+ENV EDITOR=vim
+ENV VISUAL=nano
 
 # Install uv, the Python package manager
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Add uv and other local bin directories to the PATH
 ENV PATH="/home/node/.cargo/bin:/home/node/.local/bin:/workspace/.venv/bin:${PATH}"
-
-# Set the default shell to zsh
-ENV SHELL=/bin/zsh
-ENV EDITOR=nano
-ENV VISUAL=nano
 
 # Default powerline10k theme
 ARG ZSH_IN_DOCKER_VERSION=1.2.0
@@ -93,15 +84,14 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude (npm was installed with nodejs)
+# Install Claude
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+
 
 # Copy and set up firewall script
 COPY init-firewall.sh /usr/local/bin/
-# Switch back to root temporarily to set permissions
 USER root
 RUN chmod +x /usr/local/bin/init-firewall.sh && \
   echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
   chmod 0440 /etc/sudoers.d/node-firewall
-# Switch back to the default user
 USER node

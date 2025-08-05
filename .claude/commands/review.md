@@ -54,7 +54,8 @@ You will make a decision: Approve, Request Changes, or Start Over. Your actions 
     **Summary:**
     The implementation correctly and robustly fulfills all requirements of the task group with no issues found. The code is clean, maintainable, and architecturally consistent.
     `
-2.  *Terminate:* Report success to the user. Your work is done.
+2.  *Move the Task Document:* Move the Task Document corresponding to the completed task ($ARGUMENTS) from `docs/tasks/incomplete/` to `docs/tasks/completed/`, and add a "**Reviewed & approved on {YYYY-MM-DD}**" at the very top of the moved document.
+3.  *Terminate:* Report success to the user. Your work is done.
 
 #### *If Decision is Request Changes:*
 
