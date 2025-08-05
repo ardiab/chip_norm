@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import gc
 import logging
+import pickle
 from typing import TYPE_CHECKING, Literal
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from itertools import combinations
+from omegaconf import DictConfig
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -19,11 +22,34 @@ logger = logging.getLogger(__name__)
 SD_SCALING_FACTOR = 100_000_000
 
 
-def build_datasets(
-    bed_fpath_groups: list[tuple[dict[Literal["exp", "ctrl"], Path]]],
-    train_chroms: list[str],
-    val_chroms: list[str],
-):
+def build_datasets(cfg: DictConfig):
+    """
+    Build datasets from configuration by processing BED files.
+    """
+    from chipvi.utils.path_helper import PathHelper
+    
+    # Initialize path helper to resolve file paths
+    paths = PathHelper(cfg)
+    
+    # Extract BED file paths from configuration
+    if cfg.name == "h3k27me3":
+        # Read replicate groups from configuration
+        bed_fpath_groups = []
+        for group in cfg.replicate_groups:
+            group_paths = []
+            for replicate in group:
+                group_paths.append({
+                    "exp": paths.entex_proc_file_dir / replicate.exp,
+                    "ctrl": paths.entex_proc_file_dir / replicate.ctrl
+                })
+            bed_fpath_groups.append(group_paths)
+        
+        # Read chromosome splits from configuration
+        train_chroms = cfg.train_chroms
+        val_chroms = cfg.val_chroms
+    else:
+        raise ValueError(f"Unknown dataset name: {cfg.name}")
+    
     # Each sample will have one experimental reads file and one control reads file.
     replicate_mode = len(bed_fpath_groups[0]) > 1
 
@@ -139,6 +165,7 @@ def build_datasets(
                 nonzero_mask_train = rep_dict_1["exp_train_df"]["reads"] > 0
                 nonzero_mask_val = rep_dict_1["exp_val_df"]["reads"] > 0
             else:
+                rep_dict_2 = rep_group_data[rep_2_idx]
                 nonzero_mask_train = (rep_dict_1["exp_train_df"]["reads"] > 0) | (rep_dict_2["exp_train_df"]["reads"] > 0)
                 nonzero_mask_val = (rep_dict_1["exp_val_df"]["reads"] > 0) | (rep_dict_2["exp_val_df"]["reads"] > 0)
 

@@ -1,0 +1,23 @@
+# configs/experiment/exp_001_concordance.yaml
+defaults:
+  - _self_
+  - /data: h3k27me3_200bp
+  - /model: nb_mu_r_small
+
+# Main training parameters - moved to top level
+num_epochs: 100
+learning_rate: 0.001
+weight_decay: 0.01
+patience: 10
+device: "cuda:0"
+# Name of the loss function to use
+loss_fn: "replicate_concordance_mse"
+
+# Data parameters - moved to top level
+name: "h3k27me3"
+batch_size: 8192
+
+# Name for this run group in W&B
+wandb:
+  group: "refactored_runs"
+  project: "chipvi"

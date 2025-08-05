@@ -141,7 +141,7 @@ This task group addresses the "Insufficient Test Coverage" finding by creating t
     *   **Test Case Description:** Write a test named `test_residual_mse_loss_calculation`. This test must:
         *   Create simple `torch.Tensor` inputs: `y_r1 = torch.tensor([10.0, 20.0])`, `mu_tech_r1 = torch.tensor([4.0, 12.0])`, `y_r2 = torch.tensor([15.0, 25.0])`, `mu_tech_r2 = torch.tensor([5.0, 15.0])`, and `sd_ratio = torch.tensor([1.0, 1.0])`.
         *   Calculate the residuals: `r1_residual` should be `[6.0, 8.0]`. `r2_residual` should be `[10.0, 10.0]`.
-        *   Calculate the expected MSE: `mean(( [6, 8] - [10, 10] )^2)` which is `mean([ -4, -2]^2 )` = `mean([16, 4])` = `10.0`.
+        *   Calculate the expected MSE: `mean(( [6, 8] - [10, 10] )^2)` which is `mean( [-4, -2]^2 )` = `mean([16, 4])` = `10.0`.
         *   Call a new (not-yet-created) `compute_residual_mse` function with these tensors.
         *   Assert that the function returns a value approximately equal to `10.0`.
 
@@ -246,7 +246,7 @@ This task group will create the new `Trainer` class and refactor the custom loss
         import torch
         from torch import nn
         
-        def replicate_concordance_mse_loss(model_outputs: dict, batch: dict) -> torch.Tensor:
+def replicate_concordance_mse_loss(model_outputs: dict, batch: dict) -> torch.Tensor:
         ```
     *   **Implementation Logic:**
         *   The function will now be responsible for unpacking the necessary data from the `model_outputs` and `batch` dictionaries.
@@ -313,10 +313,6 @@ This task group will create the new `Trainer` class and refactor the custom loss
 
 4.  ✅ **Run tests:** Run `pytest` from the root directory.
     *   The new test `test_trainer_completes_one_epoch` should pass, confirming that the trainer can successfully orchestrate the forward pass, loss calculation, and backpropagation using the new dictionary-based data format.
-5.  ✅ **(REVIEW) Modify loss function:** In `chipvi/training/losses.py`, refactor the `replicate_concordance_mse_loss` function to call the `compute_residual_mse` function.
-6.  ✅ **(REVIEW) Modify trainer class:** In `chipvi/training/trainer.py`, remove the `.squeeze()` calls from the `model_outputs` dictionary creation in the `_train_one_epoch` and `_validate_one_epoch` methods.
-7.  ✅ **(REVIEW) Modify trainer class:** In `chipvi/training/trainer.py`, simplify the `_move_batch_to_device` function to be a non-recursive function.
-8.  ✅ **(REVIEW) Run tests:** Run `pytest` from the root directory and ensure all tests pass.
 
 ---
 
@@ -451,6 +447,11 @@ This task group will integrate all previously refactored components, allowing us
     ```bash
     python scripts/run.py experiment=experiment/exp_001_concordance
     ```    This command should successfully load the configuration, build the components, and start the training process using the new unified `Trainer`.
+7.  ✅ **(REVIEW) Delete the current implementation of `build_datasets`:** In `chipvi/data/datasets.py`, delete the new implementation of the `build_datasets` function that loads from hardcoded pickle files.
+8.  ✅ **(REVIEW) Restore and refactor the original `build_datasets` function:** In `chipvi/data/datasets.py`, restore the original, commented-out version of the `build_datasets` function. Modify this restored logic to extract its parameters (e.g., `bed_fpath_groups`, `train_chroms`, `val_chroms`) from the `cfg: DictConfig` object.
+9.  ✅ **(REVIEW) Simplify configuration access:** In `scripts/run.py` and the relevant YAML files in `configs/`, flatten the configuration structure by removing the `experiment` key, so that parameters are accessed directly from `cfg` (e.g., `cfg.training.device` becomes `cfg.device`).
+10. ✅ **(REVIEW) Run tests:** Run `pytest` from the root directory and ensure all tests pass.
+11. ✅ **(REVIEW) Make data loading fully configurable:** In `chipvi/data/datasets.py`, modify the `build_datasets` function to read the `bed_fpath_groups` from the `cfg.replicate_groups` configuration property. Update the corresponding data configuration file (e.g., `configs/data/h3k27me3_200bp.yaml`) to include this `replicate_groups` list.
 
 ---
 
@@ -501,7 +502,7 @@ This task group replaces the in-memory data preparation with a script that pre-p
         ```python
         from omegaconf import DictConfig
         
-        def run_preprocessing(cfg: DictConfig):
+def run_preprocessing(cfg: DictConfig):
         ```
     *   **Implementation Logic:**
         *   This function will orchestrate the entire data preparation process.
@@ -565,7 +566,7 @@ This task group will address the "Gradient Masking," "Arbitrary Value Replacemen
     *   **Implementation Logic:**
         *   Move the argument parsing logic (e.g., using `argparse` or `hydra-zen`) into this file.
         *   This script will be the new user-facing entry point for downloading data.
-        *   It should import the `download_and_process_entex_files` function from `chipvi.utils.public_data_processing.download_entex_files` and call it with the parsed arguments.
+        *   It should import the `download_and_process_entex_files` function from `chipvi/utils/public_data_processing/download_en_files` and call it with the parsed arguments.
         *   Do the same for `get_entex_metadata.py`, creating a corresponding script in `scripts/` and removing its executable block.
 
 6.  **Update documentation:** In `README.md` or a new `CONTRIBUTING.md`, add a section explaining the new workflow:
@@ -574,6 +575,5 @@ This task group will address the "Gradient Masking," "Arbitrary Value Replacemen
     *   How to download new data using `scripts/download_data.py`.
 
 7.  **Run all tests:** Run `pytest` from the root directory. All tests should continue to pass, confirming that our final cleanup has not introduced any regressions.
-
 
 ---

@@ -3,6 +3,7 @@
 # Defaults for Hydra
 defaults:
   - _self_
+  - experiment: exp_001_concordance
 
 # Define the core directory structure.
 # Paths can be defined relative to the project root or as absolute paths.
