@@ -1,10 +1,11 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "chip_norm"
 version = "0.1.0"
 requires-python = "~=3.12" 
-
-# --- Main Dependencies ---
-# This section replaces your requirements.txt file.
 dependencies = [
     "pandas",
     "requests",
@@ -13,7 +14,16 @@ dependencies = [
     "pytest",
     "torch",
     "pre-commit",
+    "matplotlib",
+    "scikit-learn",
+    "wandb",
+    "seaborn",
+    "einops"
 ]
+
+[tool.setuptools.packages.find]
+include = ["chipvi*"]
+
 
 [project.optional-dependencies]
 dev = [
