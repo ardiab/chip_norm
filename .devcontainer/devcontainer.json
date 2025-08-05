@@ -1,0 +1,58 @@
+{
+    "name": "Claude Code Sandbox (Ubuntu AMD64)",
+    "build": {
+      "dockerfile": "Dockerfile",
+      "args": {
+        "TZ": "${localEnv:TZ:America/New_York}",
+        "CLAUDE_CODE_VERSION": "latest",
+        "GIT_DELTA_VERSION": "0.18.2",
+        "ZSH_IN_DOCKER_VERSION": "1.2.0"
+      }
+    },
+    "platform": "linux/amd64",
+    "runArgs": [
+      "--cap-add=NET_ADMIN",
+      "--cap-add=NET_RAW"
+    ],
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "dbaeumer.vscode-eslint",
+          "esbenp.prettier-vscode",
+          "eamodio.gitlens",
+          "ms-python.python"
+        ],
+        "settings": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit"
+          },
+          "terminal.integrated.defaultProfile.linux": "zsh",
+          "terminal.integrated.profiles.linux": {
+            "bash": {
+              "path": "bash",
+              "icon": "terminal-bash"
+            },
+            "zsh": {
+              "path": "zsh"
+            }
+          },
+          "python.defaultInterpreterPath": "/workspace/.venv/bin/python"
+        }
+      }
+    },
+    "remoteUser": "node",
+    "mounts": [
+      "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+      "source=${localWorkspaceFolder}/.claude,target=/home/node/.claude,type=bind,consistency=cached"
+    ],
+    "containerEnv": {
+      "NODE_OPTIONS": "--max-old-space-size=4096",
+      "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+      "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+    "workspaceFolder": "/workspace",
+    "postCreateCommand": "sudo /usr/local/bin/init-firewall.sh && sudo chown -R node:node /home/node/.claude && uv venv python@3.12 && uv pip install -e '.[dev]'"
+  }

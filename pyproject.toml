@@ -1,0 +1,23 @@
+[project]
+name = "chip_norm"
+version = "0.1.0"
+requires-python = "~=3.12" 
+
+# --- Main Dependencies ---
+# This section replaces your requirements.txt file.
+dependencies = [
+    "pandas",
+    "requests",
+    "numpy",
+    "hydra-core",
+    "pytest",
+    "torch",
+    "pre-commit",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "ipython",
+]
