@@ -1,0 +1,34 @@
+paths:
+  project_root: ${hydra:runtime.cwd}
+  data_base: ${paths.project_root}/data
+  data_raw: ${paths.data_base}/raw
+  data_processed: ${paths.data_base}/processed
+  entex_base: ${paths.data_base}/entex_files
+  entex_raw: ${paths.entex_base}/raw
+  entex_processed: ${paths.entex_base}/proc
+  outputs: ${hydra:run.dir}
+experiment:
+  name: h3k27me3
+  num_epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.01
+  patience: 10
+  device: cuda:0
+  loss_fn: replicate_concordance_mse
+  batch_size: 8192
+  wandb:
+    group: refactored_runs
+    project: chipvi
+  data:
+    name: h3k27me3
+    aggregation_factor: 8
+    batch_size: 8192
+  model:
+    _target_: chipvi.models.technical_model.TechNB_mu_r
+    covariate_dim: 5
+    hidden_dims_mu:
+    - 32
+    - 32
+    hidden_dims_r:
+    - 8
+    - 8

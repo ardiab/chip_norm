@@ -1,0 +1,5 @@
+# configs/model/nb_mu_r_small.yaml
+_target_: chipvi.models.technical_model.TechNB_mu_r
+covariate_dim: 5 # This will be overridden by data config
+hidden_dims_mu: [32, 32]
+hidden_dims_r: [8, 8]

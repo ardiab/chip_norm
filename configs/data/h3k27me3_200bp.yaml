@@ -1,0 +1,15 @@
+# configs/data/h3k27me3_200bp.yaml
+name: "h3k27me3"
+aggregation_factor: 8 # 25bp -> 200bp
+batch_size: 8192
+
+# Replicate groups configuration - each group contains experiment/control pairs for replicates
+replicate_groups:
+  - - exp: "h3k27me3_exp_r1.bed"
+      ctrl: "h3k27me3_ctrl_r1.bed"
+    - exp: "h3k27me3_exp_r2.bed"
+      ctrl: "h3k27me3_ctrl_r2.bed"
+
+# Chromosome splits for train/validation
+train_chroms: ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7"]
+val_chroms: ["chr8", "chr9"]
