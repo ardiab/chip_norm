@@ -1,13 +1,7 @@
-"""Functions for downloading and processing BAM files.
-
-This script should not be called directly by the user. Instead, import and call the download_entex_files function
-from another script. download_entex_files will then call this script as appropriate, either in single mode or
-once per split in batch mode.
-"""
+"""Functions for downloading and processing BAM files."""
 
 from __future__ import annotations
 
-import argparse
 import logging
 import os
 import time
@@ -22,23 +16,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse the command line arguments.
-
-    Returns:
-        argparse.Namespace: Namespace object with passed arguments as attributes.
-
-    """
-    parser = argparse.ArgumentParser(
-        description="Download BAM files and convert them to numpy arrays",
-    )
-    parser.add_argument(
-        "--url_list_fpath",
-        type=str,
-        help="Path to a text file containing URLs to download",
-    )
-
-    return parser.parse_args()
 
 
 def _download_url_list(url_list_fpath: str) -> dict[str, list[str]]:
@@ -231,7 +208,7 @@ def download_and_process_entex_files(
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         split_list_txt_fpath = Path(PathHelper.ENTEX_RAW_FILE_DIR) / f"url_list_{timestamp}.txt"
         _write_url_list_to_file(accession_list, file_type_list, split_list_txt_fpath)
-        os.system(f"python {__file__} --url_list_fpath {split_list_txt_fpath}")
+        process_downloaded_files(split_list_txt_fpath)
     # Batch mode (call this script multiple times in parallel, once per split).
     else:
         accession_splits = _split_accessions_for_parallel_processing(
@@ -257,7 +234,8 @@ def download_and_process_entex_files(
                 fpath=split_list_txt_fpath,
             )
 
-            command = f"python {__file__} --url_list_fpath {split_list_txt_fpath}"
+            # This will need to be updated to use the new script
+            command = f"python scripts/download_data.py --url_list_fpath {split_list_txt_fpath}"
             commands.append(command)
 
         run_in_tmux("download_and_process_entex", commands=commands)
@@ -303,7 +281,7 @@ def process_bam_file(bam_fpath: Path) -> None:
     logger.info("Finished processing %s in %.3f seconds", bam_fpath, time.time() - t1)
 
 
-def main(url_list: str) -> None:
+def process_downloaded_files(url_list: str) -> None:
     """Download the URLs in the given list and convert any BAM files to numpy arrays.
 
     Args:
@@ -320,8 +298,3 @@ def main(url_list: str) -> None:
             len(downloaded_file_dict["bam"]),
             time.time() - t1,
         )
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    main(args.url_list_fpath)

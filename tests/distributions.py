@@ -1,8 +1,9 @@
 import torch
 import scipy.stats as sps
 import numpy as np
+import pytest
 
-from chipvi.utils.distributions import nb_cdf_r_p, poisson_cdf
+from chipvi.utils.distributions import nb_cdf_r_p, poisson_cdf, get_torch_nb_dist
 
 
 def test_nb_r_p_cdf():
@@ -37,6 +38,26 @@ def test_nb_r_p_cdf():
 #     rate = torch.tensor([1.0, 2.0, 3.0])
 #     cdf = poisson_cdf(x, rate, device=device)
 #     assert cdf.shape == (3, 10)
+
+def test_get_torch_nb_dist_raises_error_on_invalid_input():
+    """Test that get_torch_nb_dist raises ValueError on invalid inputs."""
+    # Test with NaN mu
+    mu_nan = torch.tensor([1.0, float('nan'), 3.0])
+    r_valid = torch.tensor([1.0, 2.0, 3.0])
+    with pytest.raises(ValueError):
+        get_torch_nb_dist(r=r_valid, mu=mu_nan)
+    
+    # Test with zero r
+    mu_valid = torch.tensor([1.0, 2.0, 3.0])
+    r_zero = torch.tensor([1.0, 0.0, 3.0])
+    with pytest.raises(ValueError):
+        get_torch_nb_dist(r=r_zero, mu=mu_valid)
+    
+    # Test with negative r
+    r_negative = torch.tensor([1.0, -2.0, 3.0])
+    with pytest.raises(ValueError):
+        get_torch_nb_dist(r=r_negative, mu=mu_valid)
+
 
 # if __name__ == "__main__":
 #     test_nb_cdf()
