@@ -1,43 +1,48 @@
 import torch
+import numpy as np
+from pathlib import Path
 
 from chipvi.data.datasets import MultiReplicateDataset
 
 
 
-def test_refactored_multireplicatedataset_returns_structured_dict():
+def test_refactored_multireplicatedataset_returns_structured_dict(tmp_path):
     """Test that refactored MultiReplicateDataset returns a structured dictionary."""
-    # Create the same small, identifiable torch.Tensor objects for the dataset inputs
-    control_reads_r1 = torch.ones(10)
-    control_mapq_r1 = torch.zeros(10)
-    control_seq_depth_r1 = torch.full((10,), 2.0)
-    experiment_reads_r1 = torch.full((10,), 3.0)
-    experiment_mapq_r1 = torch.full((10,), 4.0)
-    experiment_seq_depth_r1 = torch.full((10,), 5.0)
+    # Create test data arrays
+    control_reads_r1 = np.ones(10, dtype=np.float32)
+    control_mapq_r1 = np.zeros(10, dtype=np.float32)
+    control_seq_depth_r1 = np.full(10, 2.0, dtype=np.float32)
+    experiment_reads_r1 = np.full(10, 3.0, dtype=np.float32)
+    experiment_mapq_r1 = np.full(10, 4.0, dtype=np.float32)
+    experiment_seq_depth_r1 = np.full(10, 5.0, dtype=np.float32)
     
-    control_reads_r2 = torch.full((10,), 6.0)
-    control_mapq_r2 = torch.full((10,), 7.0)
-    control_seq_depth_r2 = torch.full((10,), 8.0)
-    experiment_reads_r2 = torch.full((10,), 9.0)
-    experiment_mapq_r2 = torch.full((10,), 10.0)
-    experiment_seq_depth_r2 = torch.full((10,), 11.0)
-    grp_idxs = torch.full((10,), 12)
+    control_reads_r2 = np.full(10, 6.0, dtype=np.float32)
+    control_mapq_r2 = np.full(10, 7.0, dtype=np.float32)
+    control_seq_depth_r2 = np.full(10, 8.0, dtype=np.float32)
+    experiment_reads_r2 = np.full(10, 9.0, dtype=np.float32)
+    experiment_mapq_r2 = np.full(10, 10.0, dtype=np.float32)
+    experiment_seq_depth_r2 = np.full(10, 11.0, dtype=np.float32)
+    grp_idxs = np.full(10, 12, dtype=np.int32)
     
-    # Instantiate MultiReplicateDataset with these tensors
-    dataset = MultiReplicateDataset(
-        control_reads_r1=control_reads_r1,
-        control_mapq_r1=control_mapq_r1,
-        control_seq_depth_r1=control_seq_depth_r1,
-        experiment_reads_r1=experiment_reads_r1,
-        experiment_mapq_r1=experiment_mapq_r1,
-        experiment_seq_depth_r1=experiment_seq_depth_r1,
-        control_reads_r2=control_reads_r2,
-        control_mapq_r2=control_mapq_r2,
-        control_seq_depth_r2=control_seq_depth_r2,
-        experiment_reads_r2=experiment_reads_r2,
-        experiment_mapq_r2=experiment_mapq_r2,
-        experiment_seq_depth_r2=experiment_seq_depth_r2,
-        grp_idxs=grp_idxs,
-    )
+    # Save arrays to temporary .npy files
+    prefix = tmp_path / "test_data"
+    np.save(f"{prefix}_control_reads_r1.npy", control_reads_r1)
+    np.save(f"{prefix}_control_mapq_r1.npy", control_mapq_r1)
+    np.save(f"{prefix}_control_seq_depth_r1.npy", control_seq_depth_r1)
+    np.save(f"{prefix}_experiment_reads_r1.npy", experiment_reads_r1)
+    np.save(f"{prefix}_experiment_mapq_r1.npy", experiment_mapq_r1)
+    np.save(f"{prefix}_experiment_seq_depth_r1.npy", experiment_seq_depth_r1)
+    
+    np.save(f"{prefix}_control_reads_r2.npy", control_reads_r2)
+    np.save(f"{prefix}_control_mapq_r2.npy", control_mapq_r2)
+    np.save(f"{prefix}_control_seq_depth_r2.npy", control_seq_depth_r2)
+    np.save(f"{prefix}_experiment_reads_r2.npy", experiment_reads_r2)
+    np.save(f"{prefix}_experiment_mapq_r2.npy", experiment_mapq_r2)
+    np.save(f"{prefix}_experiment_seq_depth_r2.npy", experiment_seq_depth_r2)
+    np.save(f"{prefix}_grp_idxs.npy", grp_idxs)
+    
+    # Instantiate MultiReplicateDataset with prefix path
+    dataset = MultiReplicateDataset(str(prefix))
     
     # Get the first item
     item = dataset[0]

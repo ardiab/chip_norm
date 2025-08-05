@@ -3,9 +3,10 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 
 # Import our refactored components
-from chipvi.data.datasets import build_datasets # We will refactor this next
+from chipvi.data.datasets import MultiReplicateDataset, SingleReplicateDataset
 from chipvi.training.trainer import Trainer
 from chipvi.training.losses import replicate_concordance_mse_loss
+from chipvi.utils.path_helper import PathHelper
 
 # A simple factory to get the loss function from the config string
 LOSS_REGISTRY = {
@@ -25,7 +26,25 @@ def main(cfg: DictConfig) -> None:
     device = torch.device(cfg.device if torch.cuda.is_available() else "cpu")
 
     # 2. Data Loading
-    train_ds, val_ds = build_datasets(cfg)
+    # Get processed data directory path
+    paths = PathHelper(cfg)
+    processed_data_dir = paths.data_processed
+    
+    # Construct dataset prefix paths
+    train_prefix = processed_data_dir / cfg.output_prefix_train
+    val_prefix = processed_data_dir / cfg.output_prefix_val
+    
+    # Instantiate datasets directly from preprocessed .npy files
+    # Check if this is single replicate or multi-replicate data
+    if (processed_data_dir / f"{cfg.output_prefix_train}_control_reads_r2.npy").exists():
+        # Multi-replicate mode
+        train_ds = MultiReplicateDataset(str(train_prefix))
+        val_ds = MultiReplicateDataset(str(val_prefix))
+    else:
+        # Single replicate mode
+        train_ds = SingleReplicateDataset(str(train_prefix))
+        val_ds = SingleReplicateDataset(str(val_prefix))
+    
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_ds, batch_size=cfg.batch_size, shuffle=False)
 
