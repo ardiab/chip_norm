@@ -16,13 +16,9 @@ def get_torch_nb_dist(
     if mu is None and p is None:
         raise ValueError("Either mu or p must be provided.")
 
-    # --- Start of suggested changes ---
-    # Add robustness for r parameter. Clamp to a reasonable range.
+    # Validate r parameter
     if torch.isnan(r).any() or torch.isinf(r).any():
-        logger.warning("r contains NaN or infinite values. Clamping.")
-        r = torch.nan_to_num(r, nan=1.0, posinf=1e6, neginf=1e-8)
-    r = r.clamp(min=1e-8, max=1e6)
-
+        raise ValueError("r contains NaN or infinite values.")
     if (r <= 0).any():
         raise ValueError("r must be positive.")
         
@@ -30,21 +26,13 @@ def get_torch_nb_dist(
         if r.squeeze().shape != mu.squeeze().shape:
             raise ValueError("r and mu must have the same shape.")
         
-        # Make mu handling more robust. Clamp to a reasonable range.
+        # Validate mu parameter
         if torch.isnan(mu).any() or torch.isinf(mu).any():
-            logger.warning("mu contains NaN or infinite values. Clamping.")
-            mu = torch.nan_to_num(mu, nan=1.0, posinf=1e6, neginf=1e-8)
-        mu = mu.clamp(min=1e-8, max=1e6)
-        # --- End of suggested changes ---
+            raise ValueError("mu contains NaN or infinite values.")
+        if (mu < 0).any():
+            raise ValueError("mu must be non-negative.")
 
         p = r / (r + mu)
-        if torch.isnan(p).any() or torch.isinf(p).any():
-            logger.warning("p contains NaN or infinite values. Replacing with 0.5")
-            p = torch.where(torch.isnan(p) | torch.isinf(p), torch.tensor(0.5, device=p.device), p)
-        if (p == 0).any() or (p == 1).any():
-            logger.warning("p contains 0 or 1 values. Replacing with 0.5")
-            p = torch.where(p == 0, torch.tensor(0.5, device=p.device), p)
-            p = torch.where(p == 1, torch.tensor(0.5, device=p.device), p)
         return D.NegativeBinomial(
             total_count=r.squeeze(),
             probs=p.squeeze(),

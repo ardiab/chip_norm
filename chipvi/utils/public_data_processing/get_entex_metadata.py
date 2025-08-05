@@ -1,7 +1,7 @@
 """Download metadata jsons for ENTEx experiments.
 
-JSONs contain information that is not available in the file and experiment spreadsheets.
-which can be downloaded from the ENCODE portal. This script is called once from the command line.
+JSONs contain information that is not available in the file and experiment spreadsheets
+which can be downloaded from the ENCODE portal.
 """
 
 import contextlib
@@ -352,7 +352,8 @@ def format_metadata_df(metadata_df: pd.DataFrame) -> pd.DataFrame:
     return metadata_df
 
 
-if __name__ == "__main__":
+def process_entex_metadata() -> None:
+    """Process ENTEx metadata and save to pickle file."""
     # The first row contains the link used to download the experiment table.
     experiment_df = pd.read_csv(PathHelper.ENTEX_EXPERIMENT_TABLE_FPATH, sep="\t", skiprows=1)
     # json_fpaths = download_json_files(exp_df=experiment_df)
