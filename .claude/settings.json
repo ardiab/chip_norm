@@ -1,0 +1,13 @@
+{
+    "permissions": {
+      "deny": [
+        "Bash(curl*)",
+        "Bash(wget*)",
+        "Bash(git commit*)",
+        "Bash(git push*)"
+      ]
+    },
+    "env": {
+      "CLAUDE_CODE_ENABLE_TELEMETRY": "0"
+    }
+  }
