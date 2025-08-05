@@ -1,0 +1,25 @@
+# configs/data/h3k27me3_preprocess.yaml
+name: "h3k27me3"
+
+# List of replicate groups. Each group has two replicates (r1, r2).
+# Each replicate has an experiment file and a control file.
+# NOTE: In a real implementation, this would be populated programmatically.
+# For this task, we will use placeholder paths.
+replicate_groups:
+  - r1:
+      exp: "path/to/exp1.bed"
+      ctrl: "path/to/ctrl1.bed"
+    r2:
+      exp: "path/to/exp2.bed"
+      ctrl: "path/to/ctrl2.bed"
+
+# Define chromosome splits for train/validation
+train_chroms: ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7"]
+val_chroms: ["chr8", "chr9"]
+
+# Aggregation settings
+aggregation_factor: 8 # e.g., 25bp -> 200bp
+
+# Output file paths (will be resolved relative to processed_data_dir)
+output_prefix_train: "h3k27me3_train_200bp"
+output_prefix_val: "h3k27me3_val_200bp"

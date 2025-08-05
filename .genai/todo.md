@@ -455,11 +455,11 @@ This task group will integrate all previously refactored components, allowing us
 
 ---
 
-### Task Group 6: Decompose Data Loading and Implement Memory-Efficient Pre-processing
+### Task Group 6: Decompose Data Loading and Implement Memory-Efficient Pre-processing ✅ COMPLETED
 
 This task group replaces the in-memory data preparation with a script that pre-processes the data and saves it to disk in an efficient format, which the `Dataset` classes will then load directly.
 
-1.  **Define a data pre-processing configuration:** In `configs/data/`, create a new configuration file named `h3k27me3_preprocess.yaml`. This will control the new pre-processing script.
+1.  ✅ **Define a data pre-processing configuration:** In `configs/data/`, create a new configuration file named `h3k27me3_preprocess.yaml`. This will control the new pre-processing script.
     ```yaml
     # configs/data/h3k27me3_preprocess.yaml
     name: "h3k27me3"
@@ -488,7 +488,7 @@ This task group replaces the in-memory data preparation with a script that pre-p
     output_prefix_val: "h3k27me3_val_200bp"
     ```
 
-2.  **Define a test for the new pre-processing pipeline:** In `tests/data/test_preprocessing.py`, add a new test.
+2.  ✅ **Define a test for the new pre-processing pipeline:** In `tests/data/test_preprocessing.py`, add a new test.
     *   **Test Case Description:** Write a test named `test_preprocessing_pipeline_creates_valid_npy_files`.
         *   Use `tmp_path` from `pytest` to create temporary directories for raw data and processed output.
         *   Create dummy raw BED files (e.g., `exp1.bed`) with simple, predictable data.
@@ -497,7 +497,7 @@ This task group replaces the in-memory data preparation with a script that pre-p
         *   Assert that the expected `.npy` files (e.g., `h3k27me3_train_200bp_control_reads_r1.npy`) are created in the temporary processed directory.
         *   Load one of the created `.npy` files and assert its contents are correct based on the dummy input data and the aggregation logic.
 
-3.  **Implement the pre-processing pipeline logic:** In `chipvi/data/preprocessing.py`, create the main pipeline function.
+3.  ✅ **Implement the pre-processing pipeline logic:** In `chipvi/data/preprocessing.py`, create the main pipeline function.
     *   **Provide the following function signature:**
         ```python
         from omegaconf import DictConfig
@@ -510,7 +510,7 @@ def run_preprocessing(cfg: DictConfig):
         *   Instead of appending results to in-memory lists, it should collect the processed numpy arrays for each data type (e.g., `train_control_reads_r1`, `val_experiment_mapq_r2`, etc.).
         *   At the end, it should save each of these final arrays to disk as a separate `.npy` file in the configured processed data directory. The filenames should be constructed from the `output_prefix` in the config (e.g., `f"{prefix}_{array_name}.npy"`).
 
-4.  **Create the pre-processing script entry point:** Create a new file at `scripts/preprocess.py`.
+4.  ✅ **Create the pre-processing script entry point:** Create a new file at `scripts/preprocess.py`.
     *   **Provide the following implementation:**
         ```python
         import hydra
@@ -531,16 +531,27 @@ def run_preprocessing(cfg: DictConfig):
             main()
         ```
 
-5.  **Refactor `Dataset` classes to load from `.npy` files:** In `chipvi/data/datasets.py`:
+5.  ✅ **Refactor `Dataset` classes to load from `.npy` files:** In `chipvi/data/datasets.py`:
     *   **DELETE the `build_datasets` function.** It is now obsolete.
     *   **Modify the `MultiReplicateDataset` `__init__` method.** It should now accept a prefix path (e.g., `data/processed/h3k27me3_train_200bp`) and load all necessary arrays from the corresponding `.npy` files using `np.load(f"{prefix_path}_control_reads_r1.npy", mmap_mode='r')`.
     *   Do the same for `SingleReplicateDataset`.
 
-6.  **Update `scripts/run.py` to use the new `Dataset`:**
+6.  ✅ **Update `scripts/run.py` to use the new `Dataset`:**
     *   Remove the call to `build_datasets`.
     *   Instantiate `MultiReplicateDataset` directly, passing the processed data prefix path derived from the experiment configuration.
 
-7.  **Run tests:** Run `pytest` from the root directory. All tests, including the new `test_preprocessing_pipeline_creates_valid_npy_files`, should pass.
+7.  ✅ **Run tests:** Run `pytest` from the root directory. All tests, including the new `test_preprocessing_pipeline_creates_valid_npy_files`, should pass.
+8.  ✅ **(REVIEW) Standardize configuration:** In `configs/data/h3k27me3_200bp.yaml`, remove the `replicate_groups` key entirely. The training configuration does not need this information.
+9.  ✅ **(REVIEW) Refactor pre-processing logic:** In `chipvi/data/preprocessing.py`, modify the `run_preprocessing` function. Remove the `itertools.combinations` logic for pairing replicates. Instead, iterate directly through `cfg.replicate_groups`, processing one group at a time and correctly handling the `r1` and `r2` data for each.
+10. ✅ **(REVIEW) Integrate PathHelper:** In `chipvi/data/preprocessing.py`, at the beginning of the `run_preprocessing` function, instantiate the `PathHelper` with the `cfg` object. Use the `paths.proc_data_dir` attribute from the helper to determine the output directory for the `.npy` files.
+11. ✅ **(REVIEW) Delete obsolete function:** In `chipvi/data/datasets.py`, delete the `build_datasets` function.
+12. ✅ **(REVIEW) Run tests:** Run `pytest` from the root directory and ensure all tests pass.
+13. ✅ **(REVIEW) Refactor data aggregation:** In `chipvi/data/preprocessing.py`, modify the `_aggregate_dataframe_bins` function to use a `groupby('chr')` operation instead of iterating through unique chromosomes. This will improve performance and simplify the code.
+14. ✅ **(REVIEW) Correct non-zero filtering:** In `chipvi/data/preprocessing.py`, modify the `run_preprocessing` function to apply the non-zero mask independently for each replicate's dataframe before any other processing. This ensures data integrity and prevents misaligned data.
+15. ✅ **(REVIEW) Simplify replicate handling:** In `chipvi/data/preprocessing.py`, remove the `replicate_mode` flag and refactor the data processing loop to be more generic. The loop should iterate through the keys of each replicate group (e.g., `r1`, `r2`) to handle single and multiple replicates in a unified manner.
+16. ✅ **(REVIEW) Optimize memory usage:** In `chipvi/data/preprocessing.py`, refactor the `run_preprocessing` function to pre-allocate numpy arrays with the final required size instead of using `list.extend()`. This will reduce memory consumption and improve performance.
+17. ✅ **(REVIEW) Run tests:** Run `pytest` from the root directory and ensure all tests pass.
+
 
 ---
 
