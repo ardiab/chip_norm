@@ -5,14 +5,51 @@ from omegaconf import DictConfig, OmegaConf
 # Import our refactored components
 from chipvi.data.datasets import MultiReplicateDataset, SingleReplicateDataset
 from chipvi.training.trainer import Trainer
-from chipvi.training.losses import replicate_concordance_mse_loss
+from chipvi.training.losses import (
+    replicate_concordance_mse_loss,
+    concordance_loss_nce_wrapper,
+    negative_pearson_loss_wrapper,
+    quantile_absolute_loss_wrapper,
+    CompositeLoss
+)
 from chipvi.utils.path_helper import PathHelper
 
 # A simple factory to get the loss function from the config string
 LOSS_REGISTRY = {
     "replicate_concordance_mse": replicate_concordance_mse_loss,
+    "concordance_loss_nce": concordance_loss_nce_wrapper,
+    "negative_pearson_loss": negative_pearson_loss_wrapper, 
+    "quantile_absolute_loss": quantile_absolute_loss_wrapper,
     # Add other losses here as they are created
 }
+
+
+def create_composite_loss(loss_config):
+    """Factory function to create composite loss from config.
+    
+    Args:
+        loss_config: Either a string (single loss) or dict with 'losses' and 'weights'
+        
+    Returns:
+        Loss function or CompositeLoss instance
+    """
+    # Handle backward compatibility - single loss string
+    if isinstance(loss_config, str):
+        return LOSS_REGISTRY[loss_config]
+    
+    # Handle composite loss configuration
+    if isinstance(loss_config, dict) and 'losses' in loss_config:
+        loss_names = loss_config['losses']
+        weights = loss_config.get('weights', [1.0] * len(loss_names))
+        return_components = loss_config.get('return_components', False)
+        
+        # Get loss functions from registry
+        loss_functions = [LOSS_REGISTRY[name] for name in loss_names]
+        
+        return CompositeLoss(loss_functions, weights, return_components)
+    
+    # Fallback: assume it's a single loss name
+    return LOSS_REGISTRY[loss_config]
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
@@ -61,7 +98,7 @@ def main(cfg: DictConfig) -> None:
         lr=cfg.learning_rate,
         weight_decay=cfg.weight_decay
     )
-    loss_fn = LOSS_REGISTRY[cfg.loss_fn]
+    loss_fn = create_composite_loss(cfg.loss_fn)
 
     # 5. Trainer Initialization and Execution
     trainer = Trainer(
