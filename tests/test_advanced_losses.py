@@ -192,12 +192,15 @@ class TestCompositeLoss:
         
         loss_functions = [loss1, loss2]
         weights = [0.5, 0.3]
+        component_names = ['mse_loss', 'nce_loss']
         
-        composite = CompositeLoss(loss_functions, weights)
+        composite = CompositeLoss(loss_functions, weights, component_names)
         
         # Test that initialization works
         assert len(composite.loss_functions) == 2
         assert len(composite.weights) == 2
+        assert len(composite.component_names) == 2
+        assert composite.component_names == ['mse_loss', 'nce_loss']
     
     def test_composite_loss_weighted_sum(self):
         """Test that composite loss returns correct weighted sum."""
@@ -209,21 +212,33 @@ class TestCompositeLoss:
         
         loss_functions = [loss1, loss2]
         weights = [0.5, 0.25]  # Expected total: 0.5*2.0 + 0.25*4.0 = 1.0 + 1.0 = 2.0
+        component_names = ['loss_a', 'loss_b']
         
-        composite = CompositeLoss(loss_functions, weights)
+        composite = CompositeLoss(loss_functions, weights, component_names)
         
         # Mock inputs (not used by our simple loss functions)
         model_out = {}
         batch = {}
         
-        total_loss = composite(model_out, batch)
+        result = composite(model_out, batch)
+        
+        # Should always return dict now
+        assert isinstance(result, dict)
+        assert 'total' in result
+        assert 'components' in result
         
         # Check that weighted sum is correct
         expected_total = torch.tensor(2.0)
-        assert torch.allclose(total_loss, expected_total)
+        assert torch.allclose(result['total'], expected_total)
+        
+        # Check components
+        assert 'loss_a' in result['components']
+        assert 'loss_b' in result['components']
+        assert torch.allclose(result['components']['loss_a'], torch.tensor(2.0))
+        assert torch.allclose(result['components']['loss_b'], torch.tensor(4.0))
     
-    def test_composite_loss_with_components(self):
-        """Test composite loss returns individual components when requested."""
+    def test_composite_loss_validation(self):
+        """Test that CompositeLoss validates inputs correctly."""
         def loss1(model_out, batch):
             return torch.tensor(3.0)
         
@@ -231,9 +246,20 @@ class TestCompositeLoss:
             return torch.tensor(6.0)
         
         loss_functions = [loss1, loss2]
-        weights = [0.4, 0.6]
         
-        composite = CompositeLoss(loss_functions, weights, return_components=True)
+        # Test mismatched lengths
+        with pytest.raises(ValueError, match="Number of loss functions must match number of weights"):
+            CompositeLoss(loss_functions, [0.4], ['loss1', 'loss2'])
+            
+        with pytest.raises(ValueError, match="Number of loss functions must match number of component names"):
+            CompositeLoss(loss_functions, [0.4, 0.6], ['loss1'])
+            
+        # Test duplicate component names
+        with pytest.raises(ValueError, match="Component names must be unique"):
+            CompositeLoss(loss_functions, [0.4, 0.6], ['loss1', 'loss1'])
+        
+        # Test valid initialization
+        composite = CompositeLoss(loss_functions, [0.4, 0.6], ['loss1', 'loss2'])
         
         model_out = {}
         batch = {}
@@ -249,6 +275,12 @@ class TestCompositeLoss:
         # Check total is correct weighted sum
         expected_total = 0.4 * 3.0 + 0.6 * 6.0  # = 1.2 + 3.6 = 4.8
         assert torch.allclose(result['total'], torch.tensor(expected_total))
+        
+        # Check components have correct names and values
+        assert 'loss1' in result['components']
+        assert 'loss2' in result['components']
+        assert torch.allclose(result['components']['loss1'], torch.tensor(3.0))
+        assert torch.allclose(result['components']['loss2'], torch.tensor(6.0))
     
     def test_composite_loss_gradient_flow(self):
         """Test that gradients flow through composite loss."""
@@ -263,14 +295,15 @@ class TestCompositeLoss:
         
         loss_functions = [loss1, loss2]
         weights = [0.5, 0.5]
+        component_names = ['squared_loss', 'linear_loss']
         
-        composite = CompositeLoss(loss_functions, weights)
+        composite = CompositeLoss(loss_functions, weights, component_names)
         
         model_out = {}
         batch = {}
         
-        total_loss = composite(model_out, batch)
-        total_loss.backward()
+        result = composite(model_out, batch)
+        result['total'].backward()
         
         # Check that gradients were computed
         assert param.grad is not None
@@ -379,16 +412,24 @@ class TestWrapperFunctions:
             quantile_absolute_loss_wrapper
         ]
         weights = [0.4, 0.3, 0.3]
+        component_names = ['nce_concordance', 'pearson_correlation', 'quantile_difference']
         
-        composite = CompositeLoss(loss_functions, weights)
+        composite = CompositeLoss(loss_functions, weights, component_names)
         
         # Compute composite loss
-        total_loss = composite(model_outputs, batch)
+        result = composite(model_outputs, batch)
         
-        # Should return a scalar tensor
-        assert total_loss.dim() == 0
-        assert not torch.isnan(total_loss)
-        assert not torch.isinf(total_loss)
+        # Should return dict with total and components
+        assert isinstance(result, dict)
+        assert 'total' in result
+        assert 'components' in result
+        assert not torch.isnan(result['total'])
+        assert not torch.isinf(result['total'])
+        
+        # Check components have expected names
+        assert 'nce_concordance' in result['components']
+        assert 'pearson_correlation' in result['components'] 
+        assert 'quantile_difference' in result['components']
         
         # Verify it equals the weighted sum of individual components
         loss1 = concordance_loss_nce_wrapper(model_outputs, batch)
@@ -396,7 +437,10 @@ class TestWrapperFunctions:
         loss3 = quantile_absolute_loss_wrapper(model_outputs, batch)
         expected_total = 0.4 * loss1 + 0.3 * loss2 + 0.3 * loss3
         
-        assert torch.allclose(total_loss, expected_total)
+        assert torch.allclose(result['total'], expected_total)
+        assert torch.allclose(result['components']['nce_concordance'], loss1)
+        assert torch.allclose(result['components']['pearson_correlation'], loss2)
+        assert torch.allclose(result['components']['quantile_difference'], loss3)
 
 
 class TestNumericalStability:

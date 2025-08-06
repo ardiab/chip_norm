@@ -240,34 +240,40 @@ def quantile_absolute_loss_wrapper(model_outputs: dict, batch: dict) -> torch.Te
 
 
 class CompositeLoss(nn.Module):
-    """Composite loss that combines multiple loss functions with weights."""
+    """Composite loss that combines multiple loss functions with weights and named components."""
     
     def __init__(
         self, 
         loss_functions: List[Callable], 
         weights: List[float],
-        return_components: bool = False
+        component_names: List[str]
     ):
-        """Initialize composite loss.
+        """Initialize composite loss with mandatory named components.
         
         Args:
             loss_functions: List of loss functions to combine
             weights: Corresponding weights for each loss function
-            return_components: If True, return dict with total and individual components
+            component_names: Names for each loss component (must be unique)
         """
         super().__init__()
         if len(loss_functions) != len(weights):
             raise ValueError("Number of loss functions must match number of weights")
         
+        if len(loss_functions) != len(component_names):
+            raise ValueError("Number of loss functions must match number of component names")
+        
+        if len(set(component_names)) != len(component_names):
+            raise ValueError("Component names must be unique")
+        
         self.loss_functions = loss_functions
         self.weights = torch.tensor(weights, dtype=torch.float32)
-        self.return_components = return_components
+        self.component_names = component_names
     
     def forward(
         self, 
         model_outputs: Dict, 
         batch: Dict
-    ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
+    ) -> Dict[str, torch.Tensor]:
         """Compute weighted combination of all loss functions.
         
         Args:
@@ -275,23 +281,23 @@ class CompositeLoss(nn.Module):
             batch: Batch data
             
         Returns:
-            Either scalar loss tensor or dict with 'total' and 'components'
+            Dict with 'total' and 'components' keys, where components is a dict of named loss values
         """
         # Compute individual loss components
-        loss_components = []
-        for loss_fn in self.loss_functions:
+        loss_components = {}
+        component_values = []
+        
+        for loss_fn, name in zip(self.loss_functions, self.component_names):
             component_loss = loss_fn(model_outputs, batch)
-            loss_components.append(component_loss)
+            loss_components[name] = component_loss
+            component_values.append(component_loss)
         
         # Stack components and compute weighted sum
-        components_tensor = torch.stack(loss_components)
+        components_tensor = torch.stack(component_values)
         weights_device = self.weights.to(components_tensor.device)
         total_loss = torch.sum(weights_device * components_tensor)
         
-        if self.return_components:
-            return {
-                'total': total_loss,
-                'components': loss_components
-            }
-        else:
-            return total_loss
+        return {
+            'total': total_loss,
+            'components': loss_components
+        }
