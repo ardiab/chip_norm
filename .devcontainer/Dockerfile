@@ -3,6 +3,9 @@ FROM node:20
 ARG TZ
 ENV TZ="$TZ"
 
+ARG WANDB_API_KEY
+ENV WANDB_API_KEY=${WANDB_API_KEY}
+
 ARG CLAUDE_CODE_VERSION=latest
 
 # Install basic development tools and iptables/ipset

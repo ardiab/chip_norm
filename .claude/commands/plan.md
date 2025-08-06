@@ -4,9 +4,9 @@ We will follow a **strict, interactive, step-by-step process**. Do not proceed t
 
 *Your Project-level Context Documents:*
 *   `docs/project_brief.md`: A high-level overview of the project’s purpose and goals, its architecture, and directory structure.
-*   `docs/contracts/*`: Contains YAML files specifying "contracts" which document component APIs.
 *   `docs/tasks/completed/*`: Contains Task Documents for tasks that have been completed and incorporated into the current codebase.
 *   `docs/tasks/incomplete/*`: Contains Task Documents for tasks that have not yet been completed.
+*   `docs/CHANGELOG.md`: A brief log detailing changes made to the project over time.
 
 **Our Collaborative Process:**
 
@@ -60,10 +60,6 @@ We will follow a **strict, interactive, step-by-step process**. Do not proceed t
 - [A clear, testable criterion for this Task.]
 - [Another clear, testable criterion for this Task.]
 
-**Relevant Contracts:**
-- [`docs/contracts/contract_name_1.yaml`]
-- [List all contract files we identified for this Task.]
-
 **Test Scenarios (for the agent to implement):**
 [This section should contain the complete, finalized list of scenarios we developed together in Step 4.]
 1.  **Scenario Name:** Description of the test case and expected outcome.
@@ -80,7 +76,6 @@ We will follow a **strict, interactive, step-by-step process**. Do not proceed t
   a. ...
   b. ...
 4.  **Ensure all tests are passing:** Run all tests to ensure that code is functioning correctly.
-5.  **Cleanup/Finalize:** Update relevant `.yaml` contract file(s) as needed (if any).
 ```
 
 ---

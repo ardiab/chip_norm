@@ -10,3 +10,8 @@
 .pytest_cache/
 package-lock.json
 *.egg-info/
+.claude/.*
+.claude/todos
+.claude/statsig
+.claude/shell-snapshots
+.claude/projects
