@@ -1,3 +1,5 @@
+**Reviewed & approved on 2025-08-06**
+
 # Task Document: Extend Configuration System
 
 **Task ID:** extend_configuration
@@ -131,3 +133,15 @@ Update the Hydra configuration system to support all new features with clean, co
     c. Document configuration options in comments
 
 11. **Ensure all tests pass:** Verify configuration system complete and usable
+
+12. **(REVIEW) Standardize loss configuration formats:** In `configs/loss/`, modify all composite loss configuration files to use a consistent format that matches the `CompositeLoss` constructor parameters. Ensure `composite_infonce.yaml`, `composite_pearson.yaml`, and `composite_quantile.yaml` all use the same structure (either the `loss_functions` + `weights` format or the `losses` dict format with embedded weights).
+
+13. **(REVIEW) Verify CompositeLoss constructor compatibility:** In `chipvi/training/losses.py`, review the `CompositeLoss` class constructor to ensure it properly supports the chosen configuration format. Update the constructor if needed to handle Hydra instantiation correctly.
+
+14. **(REVIEW) Complete preprocessing implementation:** In `scripts/run.py`, modify the `apply_preprocessing` function to actually apply log transformations to the dataset, or alternatively, update the dataset creation logic to pass preprocessing configuration to dataset constructors so transformations are applied during data loading.
+
+15. **(REVIEW) Add error handling to composite loss creation:** In `scripts/run.py`, improve the `create_composite_loss` function to include proper error handling and validation. Replace the silent fallback behavior at line 165 with explicit error messages when configuration formats are invalid or unsupported.
+
+16. **(REVIEW) Test runtime instantiation:** Create and run a test that actually instantiates composite losses from configuration files (not just structural validation) to ensure Hydra instantiation works correctly with the standardized formats.
+
+17. **(REVIEW) Run complete test suite:** Execute `python -m pytest tests/test_config_extension.py -v` to verify all configuration tests pass after fixes.

@@ -21,3 +21,31 @@ batch_size: 8192
 wandb:
   group: "refactored_runs"
   project: "chipvi"
+
+# Scheduler configuration
+scheduler:
+  warmup_epochs: 2
+  scheduler_type: cosine
+  total_epochs: ${num_epochs}
+
+# Early stopping configuration  
+early_stopping:
+  patience: 10
+  monitor: val_loss
+  mode: min
+
+# Gradient clipping configuration
+gradient_clipping:
+  max_norm: 1.0
+
+# Checkpointing strategies configuration
+checkpointing:
+  strategies:
+    - metric: val_loss
+      mode: min
+      filename: best_loss.pt
+      overwrite: true
+    - metric: val_residual_spearman
+      mode: max
+      filename: best_corr.pt
+      overwrite: true

@@ -1,0 +1,11 @@
+# configs/loss/composite_quantile.yaml
+# Composite loss with quantile absolute difference loss
+
+_target_: chipvi.training.losses.CompositeLoss
+loss_functions:
+  - _target_: chipvi.training.losses.nll_loss
+    _partial_: true
+  - _target_: chipvi.training.losses.quantile_absolute_loss_wrapper
+    _partial_: true
+weights: [1.0, 0.1]
+component_names: ["nll", "quantile"]

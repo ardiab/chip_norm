@@ -1,0 +1,11 @@
+# configs/loss/composite_infonce.yaml
+# Composite loss with InfoNCE concordance loss
+
+_target_: chipvi.training.losses.CompositeLoss
+loss_functions:
+  - _target_: chipvi.training.losses.nll_loss
+    _partial_: true
+  - _target_: chipvi.training.losses.concordance_loss_nce_wrapper
+    _partial_: true
+weights: [1.0, 0.1]
+component_names: ["nll", "concordance"]
