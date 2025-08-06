@@ -22,7 +22,6 @@ You must review the implementation of the task specified in $ARGUMENTS. Your con
 2.  *The Implementation:* Run a git diff to show all changes made. This is the work to be reviewed.
 3.  *Your Project-level Context Documents:*
     * `docs/project_brief.md`: A high-level overview of the project’s purpose and goals, its architecture, and directory structure.
-    * `docs/contracts/*`: YAML files containing "contracts" which document component APIs.
 
 ---
 
@@ -32,7 +31,7 @@ You must analyze the provided git diff against the plan and the project’s arch
 
 1.  *Logical Correctness:* Does the code correctly implement the logic described in the plan? Are there any subtle bugs?
 2.  *Robustness and Edge Cases:* How does the code behave with unexpected or edge-case inputs (e.g., None, empty lists, zero)? Is error handling correct?
-3.  *Adherence to the Contract:* Did the implementer use the *exact* function signatures, class names, and file paths specified? Were all specified tests created correctly?
+3.  *Adherence to the Plan* Did the implementer use the *exact* function signatures, class names, and file paths specified? Were all specified tests created correctly? Did the implementer avoid placing any mocks or hacks in core code?
 4.  *Simplicity and Maintainability:* Is the solution overly complex? Is there a simpler, more direct way to achieve the same correct result?
 5.  *Architectural Consistency:* Does the new code fit cleanly into the existing architecture? Does it violate any established project patterns?
 
@@ -55,7 +54,13 @@ You will make a decision: Approve, Request Changes, or Start Over. Your actions 
     The implementation correctly and robustly fulfills all requirements of the task group with no issues found. The code is clean, maintainable, and architecturally consistent.
     `
 2.  *Move the Task Document:* Move the Task Document corresponding to the completed task ($ARGUMENTS) from `docs/tasks/incomplete/` to `docs/tasks/completed/`, and add a "**Reviewed & approved on {YYYY-MM-DD}**" at the very top of the moved document.
-3.  *Terminate:* Report success to the user. Your work is done.
+3.  ***Update Changelog:***
+    *   Read the completed Task Document (`docs/tasks/completed/{TASK_ID}.md`).
+    *   Extract the task's high-level description.
+    *   Open `docs/CHANGELOG.md`. If it doesn't exist, create it with a `# Changelog` header.
+    *   Check for today's date (e.g., `## {YYYY-MM-DD}`). If it doesn't exist, add it.
+    *   Append a new bullet point under the current date, summarizing the change. For example: `- **Feature:** {Task Description from document}. (Task: `{TASK_ID}`)`
+4.  *Terminate:* Report success to the user. Your work is done.
 
 #### *If Decision is Request Changes:*
 
