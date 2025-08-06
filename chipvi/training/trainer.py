@@ -1,6 +1,6 @@
 """Unified Trainer class for ChipVI training."""
 
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional, Dict, Any, List
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from chipvi.utils.distributions import get_torch_nb_dist, compute_numeric_cdf
+from chipvi.training.checkpoint_manager import CheckpointManager
 
 
 class Trainer:
@@ -52,6 +53,12 @@ class Trainer:
         
         # Initialize scheduler (will be set in fit method once we know total epochs)
         self.scheduler = None
+        
+        # Initialize checkpoint manager if configured
+        self.checkpoint_manager = None
+        
+        # Cache for loss components from the most recent loss computation
+        self.val_component_losses = None
     
     def _parse_config(self, config: Dict[str, Any]) -> None:
         """Parse configuration dictionary and set training parameters."""
@@ -80,6 +87,25 @@ class Trainer:
             self.best_val_loss = float('inf')
             self.epochs_without_improvement = 0
             self.best_model_state = None
+        
+        # Checkpoint configuration
+        checkpoint_config = config.get('checkpoint_config', {})
+        if checkpoint_config.get('enabled', False):
+            output_dir = checkpoint_config['output_dir']
+            checkpoint_configs = checkpoint_config.get('strategies', [])
+            
+            # Initialize checkpoint manager (validation handled internally)
+            if checkpoint_configs:
+                self.checkpoint_manager = CheckpointManager(output_dir, checkpoint_configs)
+            else:
+                # Set default checkpoint strategy if none provided
+                default_config = [{
+                    'metric_name': 'val_loss',
+                    'mode': 'min',
+                    'filename': 'best_model.pt',
+                    'overwrite': True
+                }]
+                self.checkpoint_manager = CheckpointManager(output_dir, default_config)
     
     def _setup_schedulers(self, total_epochs: int) -> None:
         """Set up learning rate schedulers."""
@@ -160,6 +186,10 @@ class Trainer:
                     break
                     
         finally:
+            # Log checkpoint summary if checkpoint manager is active
+            if self.checkpoint_manager is not None:
+                self._log_checkpoint_summary()
+            
             # Clean up W&B
             self._cleanup_wandb()
     
@@ -195,7 +225,15 @@ class Trainer:
             }
             
             # Calculate loss
-            loss = self.loss_fn(model_outputs, batch)
+            loss_result = self.loss_fn(model_outputs, batch)
+            
+            # Handle loss components if available
+            if isinstance(loss_result, dict) and 'total' in loss_result and 'components' in loss_result:
+                loss = loss_result['total']
+                self.val_component_losses = loss_result['components']
+            else:
+                loss = loss_result
+                self.val_component_losses = None
             
             # Backward pass
             loss.backward()
@@ -239,6 +277,10 @@ class Trainer:
         observations_r1 = []
         observations_r2 = []
         
+        # Initialize collectors for loss components
+        component_totals = {}
+        num_component_batches = 0
+        
         with torch.no_grad():
             for batch in self.val_loader:
                 # Move batch tensors to device
@@ -259,7 +301,23 @@ class Trainer:
                 }
                 
                 # Calculate loss
-                loss = self.loss_fn(model_outputs, batch)
+                loss_result = self.loss_fn(model_outputs, batch)
+                
+                # Handle loss components if available
+                if isinstance(loss_result, dict) and 'total' in loss_result and 'components' in loss_result:
+                    loss = loss_result['total']
+                    components = loss_result['components']
+                    
+                    # Initialize component_totals on first batch (now as dict)
+                    if len(component_totals) == 0:
+                        component_totals = {name: torch.tensor(0.0) for name in components.keys()}
+                    
+                    # Accumulate components by name
+                    for name, component in components.items():
+                        component_totals[name] += component.detach()
+                    num_component_batches += 1
+                else:
+                    loss = loss_result
                 
                 # Collect validation metrics
                 y_r1 = batch['r1']['reads']
@@ -292,6 +350,12 @@ class Trainer:
                 total_loss += loss.item()
                 num_batches += 1
         
+        # Compute averaged loss components if available
+        if num_component_batches > 0:
+            self.val_component_losses = {name: total / num_component_batches for name, total in component_totals.items()}
+        else:
+            self.val_component_losses = None
+        
         # Compute validation metrics and create visualizations
         if num_batches > 0:
             validation_metrics = self._compute_validation_metrics(
@@ -299,8 +363,50 @@ class Trainer:
                 predictions_r1, predictions_r2, observations_r1, observations_r2
             )
             self._log_validation_metrics(validation_metrics, epoch)
+            
+            # Update checkpoint manager if configured
+            if self.checkpoint_manager is not None:
+                # Prepare metrics dictionary for checkpoint manager
+                val_loss = total_loss / num_batches
+                checkpoint_metrics = {
+                    'val_loss': val_loss,
+                    'val_residual_spearman': validation_metrics['val_residual_spearman'],
+                    'val_quantile_spearman': validation_metrics['val_quantile_spearman']
+                }
+                
+                # Add loss components if available
+                if self.val_component_losses:
+                    checkpoint_metrics['loss_components'] = {
+                        name: float(component.item()) if hasattr(component, 'item') else float(component)
+                        for name, component in self.val_component_losses.items()
+                    }
+                
+                # Update checkpoints
+                self.checkpoint_manager.update(
+                    checkpoint_metrics, 
+                    self.model.state_dict(), 
+                    epoch
+                )
         
         return total_loss / num_batches if num_batches > 0 else 0.0
+    
+    
+    def _log_checkpoint_summary(self) -> None:
+        """Log summary of saved checkpoints."""
+        if self.checkpoint_manager is None:
+            return
+        
+        print("\n=== Checkpoint Summary ===")
+        for config in self.checkpoint_manager.checkpoint_configs:
+            metric_name = config['metric_name']
+            filename = config['filename']
+            best_value = self.checkpoint_manager.best_values.get(metric_name)
+            
+            if best_value is not None:
+                print(f"Best {metric_name}: {best_value:.6f} -> {filename}")
+            else:
+                print(f"No improvement found for {metric_name}")
+        print("==========================\n")
     
     def _move_batch_to_device(self, batch: dict) -> dict:
         """Move all tensors in a batch dictionary to the specified device.

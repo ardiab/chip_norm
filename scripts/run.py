@@ -33,7 +33,7 @@ def create_composite_loss(loss_config):
     Returns:
         Loss function or CompositeLoss instance
     """
-    # Handle backward compatibility - single loss string
+    # Handle single loss string
     if isinstance(loss_config, str):
         return LOSS_REGISTRY[loss_config]
     
@@ -41,12 +41,14 @@ def create_composite_loss(loss_config):
     if isinstance(loss_config, dict) and 'losses' in loss_config:
         loss_names = loss_config['losses']
         weights = loss_config.get('weights', [1.0] * len(loss_names))
-        return_components = loss_config.get('return_components', False)
+        
+        if len(loss_names) != len(weights):
+            raise ValueError("Number of losses must match number of weights")
         
         # Get loss functions from registry
         loss_functions = [LOSS_REGISTRY[name] for name in loss_names]
         
-        return CompositeLoss(loss_functions, weights, return_components)
+        return CompositeLoss(loss_functions, weights, loss_names)
     
     # Fallback: assume it's a single loss name
     return LOSS_REGISTRY[loss_config]

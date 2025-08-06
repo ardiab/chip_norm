@@ -1,0 +1,26 @@
+# configs/experiment/exp_003_full_composite.yaml
+defaults:
+  - _self_
+  - /data: h3k27me3_200bp
+  - /model: nb_mu_r_small
+
+# Main training parameters
+num_epochs: 150
+learning_rate: 0.001
+weight_decay: 0.01
+patience: 15
+device: "cuda:0"
+
+# Full composite loss with all available loss functions
+loss_fn:
+  losses: ["replicate_concordance_mse", "concordance_loss_nce", "negative_pearson_loss", "quantile_absolute_loss"]
+  weights: [0.4, 0.3, 0.2, 0.1]
+
+# Data parameters
+name: "h3k27me3"
+batch_size: 8192
+
+# Name for this run group in W&B
+wandb:
+  group: "full_composite_experiments"
+  project: "chipvi"
