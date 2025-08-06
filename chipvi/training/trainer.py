@@ -58,7 +58,7 @@ class Trainer:
         self.checkpoint_manager = None
         
         # Cache for loss components from the most recent loss computation
-        self.last_loss_components = None
+        self.val_component_losses = None
     
     def _parse_config(self, config: Dict[str, Any]) -> None:
         """Parse configuration dictionary and set training parameters."""
@@ -91,7 +91,7 @@ class Trainer:
         # Checkpoint configuration
         checkpoint_config = config.get('checkpoint_config', {})
         if checkpoint_config.get('enabled', False):
-            output_dir = checkpoint_config.get('output_dir', 'checkpoints')
+            output_dir = checkpoint_config['output_dir']
             checkpoint_configs = checkpoint_config.get('strategies', [])
             
             # Initialize checkpoint manager (validation handled internally)
@@ -230,10 +230,10 @@ class Trainer:
             # Handle loss components if available
             if isinstance(loss_result, dict) and 'total' in loss_result and 'components' in loss_result:
                 loss = loss_result['total']
-                self.last_loss_components = loss_result['components']
+                self.val_component_losses = loss_result['components']
             else:
                 loss = loss_result
-                self.last_loss_components = None
+                self.val_component_losses = None
             
             # Backward pass
             loss.backward()
@@ -352,9 +352,9 @@ class Trainer:
         
         # Compute averaged loss components if available
         if num_component_batches > 0:
-            self.last_loss_components = {name: total / num_component_batches for name, total in component_totals.items()}
+            self.val_component_losses = {name: total / num_component_batches for name, total in component_totals.items()}
         else:
-            self.last_loss_components = None
+            self.val_component_losses = None
         
         # Compute validation metrics and create visualizations
         if num_batches > 0:
@@ -375,10 +375,10 @@ class Trainer:
                 }
                 
                 # Add loss components if available
-                if self.last_loss_components:
+                if self.val_component_losses:
                     checkpoint_metrics['loss_components'] = {
                         name: float(component.item()) if hasattr(component, 'item') else float(component)
-                        for name, component in self.last_loss_components.items()
+                        for name, component in self.val_component_losses.items()
                     }
                 
                 # Update checkpoints

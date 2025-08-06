@@ -28,7 +28,7 @@ def create_composite_loss(loss_config):
     """Factory function to create composite loss from config.
     
     Args:
-        loss_config: Either a string (single loss) or dict with 'losses', 'weights', and 'component_names'
+        loss_config: Either a string (single loss) or dict with 'losses' and 'weights'
         
     Returns:
         Loss function or CompositeLoss instance
@@ -42,21 +42,13 @@ def create_composite_loss(loss_config):
         loss_names = loss_config['losses']
         weights = loss_config.get('weights', [1.0] * len(loss_names))
         
-        # Component names are now mandatory for composite losses
-        if 'component_names' not in loss_config:
-            raise ValueError("Composite loss configuration must include 'component_names'")
-        component_names = loss_config['component_names']
-        
-        # Validate lengths match
-        if len(loss_names) != len(component_names):
-            raise ValueError("Number of losses must match number of component names")
         if len(loss_names) != len(weights):
             raise ValueError("Number of losses must match number of weights")
         
         # Get loss functions from registry
         loss_functions = [LOSS_REGISTRY[name] for name in loss_names]
         
-        return CompositeLoss(loss_functions, weights, component_names)
+        return CompositeLoss(loss_functions, weights, loss_names)
     
     # Fallback: assume it's a single loss name
     return LOSS_REGISTRY[loss_config]

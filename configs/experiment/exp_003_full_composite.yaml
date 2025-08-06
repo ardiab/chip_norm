@@ -15,7 +15,6 @@ device: "cuda:0"
 loss_fn:
   losses: ["replicate_concordance_mse", "concordance_loss_nce", "negative_pearson_loss", "quantile_absolute_loss"]
   weights: [0.4, 0.3, 0.2, 0.1]
-  component_names: ["mse_concordance", "nce_concordance", "pearson_correlation", "quantile_concordance"]
 
 # Data parameters
 name: "h3k27me3"
