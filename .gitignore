@@ -15,3 +15,4 @@ package-lock.json
 .claude/statsig
 .claude/shell-snapshots
 .claude/projects
+wandb/

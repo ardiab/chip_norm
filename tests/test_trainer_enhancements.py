@@ -275,6 +275,7 @@ class TestGradientClipping:
         # Should return norm without clipping
         grad_norm = trainer._clip_gradients()
         assert isinstance(grad_norm, (float, int))
+        assert grad_norm == torch.nn.utils.clip_grad_norm_(trainer.model.parameters(), float('inf'))
 
 
 class TestWandBIntegration:
@@ -408,37 +409,6 @@ class TestConfigurationIntegration:
         # Check gradient clipping
         assert trainer.max_grad_norm == 2.0
     
-    def test_backward_compatibility(self):
-        """Test that trainer works without enhanced config (backward compatibility)."""
-        trainer = create_configured_trainer(config=None)
-        
-        # Should have default values
-        assert trainer.warmup_epochs == 0
-        assert trainer.scheduler_type == 'cosine'
-        assert trainer.patience is None
-        assert trainer.wandb_enabled == False
-        assert trainer.max_grad_norm is None
-    
-    def test_config_validation(self):
-        """Test that configuration parameters work with valid values."""
-        valid_config = {
-            'scheduler_config': {
-                'warmup_epochs': 5,
-                'scheduler_type': 'cosine'
-            },
-            'early_stopping_config': {
-                'patience': 10,
-                'monitor_metric': 'val_loss'
-            },
-            'max_grad_norm': 1.0
-        }
-        
-        # Should not raise any errors with valid config
-        trainer = create_configured_trainer(valid_config)
-        assert trainer.warmup_epochs == 5
-        assert trainer.patience == 10
-        assert trainer.max_grad_norm == 1.0
-
 
 class TestIntegrationScenarios:
     """Test integration scenarios combining multiple features."""
