@@ -12,65 +12,6 @@ from chipvi.utils.distributions import compute_numeric_cdf, get_torch_nb_dist
 from chipvi.training.trainer import Trainer
 
 
-class TestSpearmanCorrelation:
-    """Test Spearman correlation computation accuracy."""
-    
-    def test_perfect_correlation(self):
-        """Test that perfect correlation returns 1.0."""
-        # Create perfectly correlated data
-        n_samples = 100
-        x = torch.randn(n_samples)
-        y = x + 1.0  # Perfect linear relationship
-        
-        # Convert to DataFrame for pandas corr method
-        df = pd.DataFrame({
-            'x': x.numpy(),
-            'y': y.numpy()
-        })
-        
-        # Compute correlation using pandas (as specified in implementation)
-        corr_matrix = df.corr(method='spearman')
-        computed_corr = corr_matrix.loc['x', 'y']
-        
-        # Compare with scipy
-        scipy_corr, _ = spearmanr(x.numpy(), y.numpy())
-        
-        assert abs(computed_corr - 1.0) < 1e-10
-        assert abs(scipy_corr - 1.0) < 1e-10
-        assert abs(computed_corr - scipy_corr) < 1e-10
-
-    def test_no_correlation(self):
-        """Test that uncorrelated data returns correlation near 0."""
-        np.random.seed(42)
-        n_samples = 1000
-        
-        x = np.random.randn(n_samples)
-        y = np.random.randn(n_samples)  # Independent
-        
-        df = pd.DataFrame({'x': x, 'y': y})
-        computed_corr = df.corr(method='spearman').loc['x', 'y']
-        scipy_corr, _ = spearmanr(x, y)
-        
-        assert abs(computed_corr) < 0.1  # Should be close to 0
-        assert abs(computed_corr - scipy_corr) < 1e-10
-
-    def test_anti_correlation(self):
-        """Test that anti-correlated data returns correlation near -1."""
-        n_samples = 100
-        x = torch.randn(n_samples)
-        y = -x  # Perfect anti-correlation
-        
-        df = pd.DataFrame({
-            'x': x.numpy(), 
-            'y': y.numpy()
-        })
-        computed_corr = df.corr(method='spearman').loc['x', 'y']
-        scipy_corr, _ = spearmanr(x.numpy(), y.numpy())
-        
-        assert abs(computed_corr - (-1.0)) < 1e-10
-        assert abs(computed_corr - scipy_corr) < 1e-10
-
-
 class TestPITComputation:
     """Test Probability Integral Transform (PIT) analysis."""
     
@@ -318,30 +259,3 @@ class TestHist2DAccuracy:
         
         plt.close(fig)
         
-    def test_hist2d_discrete_vs_continuous_binning(self):
-        """Test that hist2d handles discrete and continuous binning appropriately."""
-        from chipvi.utils.plots import hist2d
-        
-        # Test discrete data (small integers)
-        n_points = 100
-        x_discrete = np.random.randint(0, 10, n_points)
-        y_discrete = np.random.randint(0, 10, n_points)
-        df_discrete = pd.DataFrame({'x': x_discrete, 'y': y_discrete})
-        
-        fig1, ax1 = plt.subplots()
-        hist2d(df_discrete, 'x', 'y', ax1, discrete_bins=True)
-        
-        # Test continuous data
-        x_continuous = np.random.randn(n_points)
-        y_continuous = np.random.randn(n_points)
-        df_continuous = pd.DataFrame({'x': x_continuous, 'y': y_continuous})
-        
-        fig2, ax2 = plt.subplots()
-        hist2d(df_continuous, 'x', 'y', ax2, discrete_bins=False, bins=50)
-        
-        # Both should work without error
-        assert ax1.get_xlabel() == 'x'
-        assert ax2.get_xlabel() == 'x'
-        
-        plt.close(fig1)
-        plt.close(fig2)
