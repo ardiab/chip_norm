@@ -7,6 +7,10 @@ from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 import copy
 import wandb
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from chipvi.utils.distributions import get_torch_nb_dist, compute_numeric_cdf
 
 
 class Trainer:
@@ -225,6 +229,16 @@ class Trainer:
         total_loss = 0.0
         num_batches = 0
         
+        # Initialize collectors for validation metrics
+        residuals_r1 = []
+        residuals_r2 = []
+        quantiles_r1 = []
+        quantiles_r2 = []
+        predictions_r1 = []
+        predictions_r2 = []
+        observations_r1 = []
+        observations_r2 = []
+        
         with torch.no_grad():
             for batch in self.val_loader:
                 # Move batch tensors to device
@@ -247,8 +261,44 @@ class Trainer:
                 # Calculate loss
                 loss = self.loss_fn(model_outputs, batch)
                 
+                # Collect validation metrics
+                y_r1 = batch['r1']['reads']
+                y_r2 = batch['r2']['reads']
+                sd_ratio = batch['metadata']['sd_ratio']
+                
+                # Compute residuals
+                res_r1 = y_r1 - mu_r1.squeeze()
+                res_r2 = y_r2 - mu_r2.squeeze()
+                res_r2_scaled = res_r2 * sd_ratio
+                
+                # Create distributions for quantile computation
+                dist_r1 = get_torch_nb_dist(r=r_r1.squeeze(), mu=mu_r1.squeeze())
+                dist_r2 = get_torch_nb_dist(r=r_r2.squeeze(), mu=mu_r2.squeeze())
+                
+                # Compute quantiles (PIT values)
+                quant_r1 = compute_numeric_cdf(dist_r1, y_r1)
+                quant_r2 = compute_numeric_cdf(dist_r2, y_r2)
+                
+                # Collect all metrics (move to CPU for storage)
+                residuals_r1.extend(res_r1.cpu().numpy())
+                residuals_r2.extend(res_r2_scaled.cpu().numpy())
+                quantiles_r1.extend(quant_r1.cpu().numpy())
+                quantiles_r2.extend(quant_r2.cpu().numpy())
+                predictions_r1.extend(mu_r1.squeeze().cpu().numpy())
+                predictions_r2.extend(mu_r2.squeeze().cpu().numpy())
+                observations_r1.extend(y_r1.cpu().numpy())
+                observations_r2.extend(y_r2.cpu().numpy())
+                
                 total_loss += loss.item()
                 num_batches += 1
+        
+        # Compute validation metrics and create visualizations
+        if num_batches > 0:
+            validation_metrics = self._compute_validation_metrics(
+                residuals_r1, residuals_r2, quantiles_r1, quantiles_r2,
+                predictions_r1, predictions_r2, observations_r1, observations_r2
+            )
+            self._log_validation_metrics(validation_metrics, epoch)
         
         return total_loss / num_batches if num_batches > 0 else 0.0
     
@@ -356,3 +406,208 @@ class Trainer:
     def _save_best_checkpoint(self) -> None:
         """Save the current best model state."""
         self.best_model_state = copy.deepcopy(self.model.state_dict())
+    
+    def _compute_validation_metrics(
+        self, 
+        residuals_r1: list, 
+        residuals_r2: list, 
+        quantiles_r1: list, 
+        quantiles_r2: list,
+        predictions_r1: list,
+        predictions_r2: list, 
+        observations_r1: list,
+        observations_r2: list
+    ) -> Dict[str, Any]:
+        """Compute Spearman correlations and prepare metrics for visualization.
+        
+        Args:
+            residuals_r1: List of residuals for replicate 1
+            residuals_r2: List of scaled residuals for replicate 2
+            quantiles_r1: List of quantiles (PIT values) for replicate 1
+            quantiles_r2: List of quantiles (PIT values) for replicate 2
+            predictions_r1: List of predicted means for replicate 1
+            predictions_r2: List of predicted means for replicate 2
+            observations_r1: List of observed values for replicate 1
+            observations_r2: List of observed values for replicate 2
+            
+        Returns:
+            Dictionary containing validation metrics and data for plotting
+        """
+        # Handle empty batches gracefully
+        if len(residuals_r1) == 0 or len(residuals_r2) == 0:
+            return {
+                'val_residual_spearman': 0.0,
+                'val_quantile_spearman': 0.0,
+                'metrics_dict': None
+            }
+        
+        # Concatenate all batch results into numpy arrays
+        residuals_r1 = np.array(residuals_r1)
+        residuals_r2 = np.array(residuals_r2)
+        quantiles_r1 = np.array(quantiles_r1)
+        quantiles_r2 = np.array(quantiles_r2)
+        predictions_r1 = np.array(predictions_r1)
+        predictions_r2 = np.array(predictions_r2)
+        observations_r1 = np.array(observations_r1)
+        observations_r2 = np.array(observations_r2)
+        
+        # Create pandas DataFrame with all metrics
+        df = pd.DataFrame({
+            'r1_res': residuals_r1,
+            'r2_res_scaled': residuals_r2,
+            'r1_quant': quantiles_r1,
+            'r2_quant': quantiles_r2
+        })
+        
+        # Remove NaN values for correlation computation
+        df_clean = df.dropna()
+        
+        if len(df_clean) == 0:
+            return {
+                'val_residual_spearman': 0.0,
+                'val_quantile_spearman': 0.0,
+                'metrics_dict': None
+            }
+        
+        # Use df.corr(method='spearman') to compute correlation matrix
+        corr_matrix = df_clean.corr(method='spearman')
+        
+        # Extract correlations
+        residual_corr = corr_matrix.loc['r1_res', 'r2_res_scaled'] if len(df_clean) > 1 else 0.0
+        quantile_corr = corr_matrix.loc['r1_quant', 'r2_quant'] if len(df_clean) > 1 else 0.0
+        
+        # Handle NaN correlations (can happen with constant values)
+        residual_corr = 0.0 if pd.isna(residual_corr) else residual_corr
+        quantile_corr = 0.0 if pd.isna(quantile_corr) else quantile_corr
+        
+        # Prepare data for plotting
+        metrics_dict = {
+            'r1_pred': predictions_r1,
+            'r1_obs': observations_r1,
+            'r2_pred': predictions_r2,
+            'r2_obs': observations_r2,
+            'r1_res': residuals_r1,
+            'r2_res_scaled': residuals_r2,
+            'r1_quant': quantiles_r1,
+            'r2_quant': quantiles_r2,
+        }
+        
+        return {
+            'val_residual_spearman': residual_corr,
+            'val_quantile_spearman': quantile_corr,
+            'metrics_dict': metrics_dict
+        }
+    
+    def _log_validation_metrics(self, validation_metrics: Dict[str, Any], epoch: int) -> None:
+        """Log validation metrics and create visualization plots.
+        
+        Args:
+            validation_metrics: Dictionary containing computed metrics
+            epoch: Current epoch number
+        """
+        # Log correlation metrics
+        corr_metrics = {
+            'val_residual_spearman': validation_metrics['val_residual_spearman'],
+            'val_quantile_spearman': validation_metrics['val_quantile_spearman'],
+        }
+        self._log_epoch_metrics(corr_metrics)
+        
+        # Create and log validation plots if we have data
+        metrics_dict = validation_metrics['metrics_dict']
+        if metrics_dict is not None and self.wandb_enabled:
+            try:
+                fig = create_validation_figure(metrics_dict)
+                wandb.log({"validation_plots": wandb.Image(fig)})
+                plt.close(fig)  # Free memory
+            except Exception as e:
+                print(f"Warning: Could not create validation plots: {e}")
+
+
+def create_validation_figure(metrics_dict: Dict[str, np.ndarray]) -> plt.Figure:
+    """Create comprehensive validation figure with 9 panels.
+    
+    Args:
+        metrics_dict: Dictionary containing validation metrics with keys:
+            - r1_pred, r2_pred: Predicted means
+            - r1_obs, r2_obs: Observed values
+            - r1_res, r2_res_scaled: Residuals
+            - r1_quant, r2_quant: Quantiles (PIT values)
+    
+    Returns:
+        Matplotlib figure with 3x3 subplot grid
+    """
+    from chipvi.utils.plots import hist2d
+    
+    # Create 3x3 subplot grid
+    fig, axes = plt.subplots(3, 3, figsize=(18, 18))
+    
+    # Convert metrics to DataFrame for plotting
+    df = pd.DataFrame(metrics_dict)
+    
+    # Row 1: Predictions vs Observations
+    # (0,0): R1 predicted mean vs observed
+    hist2d(df, 'r1_obs', 'r1_pred', axes[0, 0])
+    axes[0, 0].set_title('R1: Observed vs Predicted')
+    axes[0, 0].set_xlabel('Observed')
+    axes[0, 0].set_ylabel('Predicted')
+    
+    # (0,1): R2 predicted mean vs observed
+    hist2d(df, 'r2_obs', 'r2_pred', axes[0, 1])
+    axes[0, 1].set_title('R2: Observed vs Predicted')
+    axes[0, 1].set_xlabel('Observed')
+    axes[0, 1].set_ylabel('Predicted')
+    
+    # (0,2): R1 vs R2 predicted means consistency
+    hist2d(df, 'r1_pred', 'r2_pred', axes[0, 2])
+    axes[0, 2].set_title('Predicted Mean Consistency')
+    axes[0, 2].set_xlabel('R1 Predicted')
+    axes[0, 2].set_ylabel('R2 Predicted')
+    
+    # Row 2: Residual Analysis
+    # (1,0): R1 residuals histogram
+    axes[1, 0].hist(df['r1_res'], bins=50, range=(-25, 25), alpha=0.7, density=True)
+    axes[1, 0].set_title('R1 Residuals Distribution')
+    axes[1, 0].set_xlabel('Residual')
+    axes[1, 0].set_ylabel('Density')
+    axes[1, 0].axvline(0, color='red', linestyle='--', alpha=0.7)
+    
+    # (1,1): R2 scaled residuals histogram
+    axes[1, 1].hist(df['r2_res_scaled'], bins=50, range=(-25, 25), alpha=0.7, density=True)
+    axes[1, 1].set_title('R2 Scaled Residuals Distribution')
+    axes[1, 1].set_xlabel('Scaled Residual')
+    axes[1, 1].set_ylabel('Density')
+    axes[1, 1].axvline(0, color='red', linestyle='--', alpha=0.7)
+    
+    # (1,2): R1 vs R2 residual scatter plot with correlation
+    hist2d(df, 'r1_res', 'r2_res_scaled', axes[1, 2])
+    axes[1, 2].set_title('Residual Consistency')
+    axes[1, 2].set_xlabel('R1 Residual')
+    axes[1, 2].set_ylabel('R2 Scaled Residual')
+    
+    # Row 3: Quantile Analysis (PIT)
+    # (2,0): R1 quantiles histogram (should be uniform [0,1])
+    axes[2, 0].hist(df['r1_quant'], bins=20, range=(0, 1), alpha=0.7, density=True)
+    axes[2, 0].axhline(1.0, color='red', linestyle='--', alpha=0.7, label='Uniform expectation')
+    axes[2, 0].set_title('R1 PIT Distribution')
+    axes[2, 0].set_xlabel('Quantile')
+    axes[2, 0].set_ylabel('Density')
+    axes[2, 0].legend()
+    
+    # (2,1): R2 quantiles histogram (should be uniform [0,1])
+    axes[2, 1].hist(df['r2_quant'], bins=20, range=(0, 1), alpha=0.7, density=True)
+    axes[2, 1].axhline(1.0, color='red', linestyle='--', alpha=0.7, label='Uniform expectation')
+    axes[2, 1].set_title('R2 PIT Distribution')
+    axes[2, 1].set_xlabel('Quantile')
+    axes[2, 1].set_ylabel('Density')
+    axes[2, 1].legend()
+    
+    # (2,2): R1 vs R2 quantile consistency plot
+    hist2d(df, 'r1_quant', 'r2_quant', axes[2, 2])
+    axes[2, 2].set_title('PIT Consistency')
+    axes[2, 2].set_xlabel('R1 Quantile')
+    axes[2, 2].set_ylabel('R2 Quantile')
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    return fig
