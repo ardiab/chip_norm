@@ -3,6 +3,7 @@
 ## 2025-08-07
 
 - **Feature:** Create mock infrastructure for Weights & Biases (wandb) that intercepts all wandb API calls during testing. (Task: `create_wandb_mock`)
+- **Feature:** Implement a minimal, lightweight model class for CPU-based testing that uses simple linear layers instead of complex MLPs while maintaining the same interface as TechNB_mu_r. (Task: `create_minimal_model`)
 
 ## 2025-08-06
 
