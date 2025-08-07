@@ -1,5 +1,9 @@
 # Changelog
 
+## 2025-08-07
+
+- **Feature:** Create mock infrastructure for Weights & Biases (wandb) that intercepts all wandb API calls during testing. (Task: `create_wandb_mock`)
+
 ## 2025-08-06
 
 - **Feature:** Add three advanced loss functions and composite loss system to enable multi-objective training with biological replicate concordance constraints. (Task: `implement_advanced_losses`)

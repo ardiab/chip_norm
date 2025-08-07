@@ -16,3 +16,4 @@ package-lock.json
 .claude/shell-snapshots
 .claude/projects
 wandb/
+.vscode/
