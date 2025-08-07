@@ -1,0 +1,4 @@
+[2025-08-07 11:50:37,615][root][INFO] - Configuration validation completed
+[2025-08-07 11:50:37,615][root][INFO] - Using device: cpu
+[2025-08-07 11:50:37,615][root][INFO] - W&B configuration: enabled=False, project=chipvi_test
+[2025-08-07 11:50:38,208][root][INFO] - Created composite loss with functions: ['nll', 'concordance'], weights: [0.8, 0.2]

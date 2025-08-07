@@ -1,0 +1,5 @@
+[2025-08-07 11:09:34,662][root][INFO] - Configuration validation completed
+[2025-08-07 11:09:34,663][root][INFO] - Using device: cpu
+[2025-08-07 11:09:34,663][root][INFO] - W&B configuration: enabled=False, project=chipvi_test
+[2025-08-07 11:09:34,663][root][INFO] - Scheduler configuration: {'warmup_epochs': 0, 'scheduler_type': 'cosine', 'total_epochs': 100}
+[2025-08-07 11:09:35,493][root][INFO] - Created composite loss with functions: ['nll', 'concordance'], weights: [0.8, 0.2]

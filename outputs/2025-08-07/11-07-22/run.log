@@ -1,0 +1,3 @@
+[2025-08-07 11:07:22,095][root][INFO] - Configuration validation completed
+[2025-08-07 11:07:22,095][root][INFO] - Using device: cpu
+[2025-08-07 11:07:22,096][root][INFO] - W&B configuration: enabled=False, project=chipvi_test

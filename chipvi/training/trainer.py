@@ -1,17 +1,37 @@
 """Unified Trainer class for ChipVI training."""
 
 from typing import Callable, Optional, Dict, Any, List
+import os
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 import copy
-import wandb
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from chipvi.utils.distributions import get_torch_nb_dist, compute_numeric_cdf
 from chipvi.training.checkpoint_manager import CheckpointManager
+
+# Check if we're in test mode and use mock wandb if so
+if os.environ.get('CHIPVI_TEST_MODE') == '1':
+    # Create a mock wandb module for testing
+    class MockWandB:
+        def init(self, **kwargs):
+            return None
+        
+        def log(self, metrics):
+            return None
+        
+        def finish(self):
+            return None
+        
+        def Image(self, fig):
+            return None
+    
+    wandb = MockWandB()
+else:
+    import wandb
 
 
 class Trainer:

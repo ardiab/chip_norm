@@ -29,6 +29,9 @@ LOSS_REGISTRY = {
     "negative_pearson_loss": negative_pearson_loss_wrapper, 
     "quantile_absolute_loss": quantile_absolute_loss_wrapper,
     "nll_loss": nll_loss,
+    # Shorthand aliases for convenience
+    "nll": nll_loss,
+    "concordance": replicate_concordance_mse_loss,
     # Add other losses here as they are created
 }
 
@@ -278,7 +281,7 @@ def main(cfg: DictConfig) -> None:
 
     # 2. Configuration Processing
     # Setup W&B configuration
-    wandb_config = setup_wandb_config(cfg.get('wandb', {}))
+    wandb_config = setup_wandb_config(cfg.experiment.get('wandb', {}))
     
     # Setup scheduler configuration
     scheduler_config = create_scheduler_config(cfg.get('scheduler', {}))
@@ -289,15 +292,15 @@ def main(cfg: DictConfig) -> None:
     # 3. Data Loading
     # Get processed data directory path
     paths = PathHelper(cfg)
-    processed_data_dir = paths.data_processed
+    processed_data_dir = paths.proc_data_dir
     
     # Construct dataset prefix paths
-    train_prefix = processed_data_dir / cfg.output_prefix_train
-    val_prefix = processed_data_dir / cfg.output_prefix_val
+    train_prefix = processed_data_dir / cfg.experiment.output_prefix_train
+    val_prefix = processed_data_dir / cfg.experiment.output_prefix_val
     
     # Instantiate datasets directly from preprocessed .npy files
     # Check if this is single replicate or multi-replicate data
-    if (processed_data_dir / f"{cfg.output_prefix_train}_control_reads_r2.npy").exists():
+    if (processed_data_dir / f"{cfg.experiment.output_prefix_train}_control_reads_r2.npy").exists():
         # Multi-replicate mode
         train_ds = MultiReplicateDataset(str(train_prefix))
         val_ds = MultiReplicateDataset(str(val_prefix))
@@ -312,20 +315,20 @@ def main(cfg: DictConfig) -> None:
         val_ds = apply_preprocessing(val_ds, cfg.preprocessing)
     
     # Create data loaders with batch size from training config or fallback to top-level
-    batch_size = cfg.get('training', {}).get('batch_size', cfg.get('batch_size', 8192))
+    batch_size = cfg.get('training', {}).get('batch_size', cfg.experiment.get('batch_size', cfg.get('batch_size', 8192)))
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
     # 4. Model Initialization
     # Hydra instantiates the model for us using the _target_ field
     model = hydra.utils.instantiate(
-        cfg.model,
+        cfg.experiment.model,
         covariate_dim=train_ds.get_covariate_dim()
     ).to(device)
 
     # 5. Optimizer and Loss Function
-    # Get training parameters from new structure or fallback to old
-    training_cfg = cfg.get('training', cfg)  # Use training section if available, else use root
+    # Get training parameters from experiment or training section, with fallback to root
+    training_cfg = cfg.get('training', cfg.experiment)  # Use training section if available, else experiment
     learning_rate = training_cfg.get('learning_rate', 0.001)
     weight_decay = training_cfg.get('weight_decay', 0.01)
     
@@ -336,47 +339,58 @@ def main(cfg: DictConfig) -> None:
     )
     
     # Handle both old and new loss configuration formats
-    loss_config = cfg.get('loss', cfg.get('loss_fn', 'replicate_concordance_mse'))
+    loss_config = cfg.get('loss', cfg.experiment.get('loss_fn', cfg.get('loss_fn', 'replicate_concordance_mse')))
     loss_fn = create_composite_loss(loss_config)
 
     # 6. Trainer Initialization and Execution
-    trainer_kwargs = {
-        'model': model,
-        'train_loader': train_loader,
-        'val_loader': val_loader,
-        'optimizer': optimizer,
-        'loss_fn': loss_fn,
-        'device': device,
-    }
+    # Build config dictionary for the Trainer
+    trainer_config = {}
     
-    # Add new configuration options if available
+    # Add scheduler configuration
     if scheduler_config:
-        trainer_kwargs['scheduler_config'] = scheduler_config
+        trainer_config['scheduler_config'] = scheduler_config
         
+    # Add checkpoint configuration
     if checkpoint_strategies:
-        trainer_kwargs['checkpoint_strategies'] = checkpoint_strategies
+        trainer_config['checkpoint_config'] = {
+            'enabled': True,
+            'output_dir': './checkpoints',
+            'strategies': checkpoint_strategies
+        }
         
+    # Add wandb configuration
     if wandb_config and wandb_config['enabled']:
-        trainer_kwargs['wandb_config'] = wandb_config
+        trainer_config['wandb_config'] = wandb_config
         
     # Add early stopping configuration if available
     if hasattr(cfg, 'early_stopping'):
-        trainer_kwargs['early_stopping_config'] = {
+        trainer_config['early_stopping_config'] = {
             'patience': cfg.early_stopping.get('patience', 10),
-            'monitor': cfg.early_stopping.get('monitor', 'val_loss'),
-            'mode': cfg.early_stopping.get('mode', 'min')
+            'monitor_metric': cfg.early_stopping.get('monitor', 'val_loss'),
+        }
+    # Also check experiment-level patience setting
+    elif hasattr(cfg.experiment, 'patience'):
+        trainer_config['early_stopping_config'] = {
+            'patience': cfg.experiment.patience,
+            'monitor_metric': 'val_loss',
         }
         
     # Add gradient clipping configuration if available
     if hasattr(cfg, 'gradient_clipping'):
-        trainer_kwargs['gradient_clipping_config'] = {
-            'max_norm': cfg.gradient_clipping.get('max_norm', 1.0)
-        }
+        trainer_config['max_grad_norm'] = cfg.gradient_clipping.get('max_norm', 1.0)
     
-    trainer = Trainer(**trainer_kwargs)
+    trainer = Trainer(
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        optimizer=optimizer,
+        loss_fn=loss_fn,
+        device=device,
+        config=trainer_config
+    )
     
     # Get number of epochs from new structure or fallback to old
-    num_epochs = training_cfg.get('num_epochs', cfg.get('num_epochs', 100))
+    num_epochs = training_cfg.get('num_epochs', cfg.experiment.get('num_epochs', cfg.get('num_epochs', 100)))
     
     print(f"\n--- Starting Training for {num_epochs} epochs ---")
     trainer.fit(num_epochs=num_epochs)
