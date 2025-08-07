@@ -1,0 +1,7 @@
+- experiment=test_e2e
+- paths.data_base=/tmp/tmpooi7hdgi
+- +num_epochs=1
+- +batch_size=8
+- +device=cpu
+- experiment.loss_fn.losses=[nll,concordance]
+- experiment.loss_fn.weights=[0.8,0.2]

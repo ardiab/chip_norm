@@ -1,0 +1,8 @@
+- experiment=test_e2e
+- paths.data_base=/tmp/tmp7gb49n2p
+- +num_epochs=3
+- +batch_size=8
+- +device=cpu
+- +scheduler.name=StepLR
+- +scheduler.step_size=1
+- +scheduler.gamma=0.9

@@ -1,0 +1,5 @@
+- experiment=test_e2e
+- paths.data_base=/tmp/tmp52k939p9
+- +num_epochs=2
+- +batch_size=16
+- +device=cpu
