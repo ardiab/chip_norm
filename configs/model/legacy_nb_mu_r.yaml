@@ -1,0 +1,7 @@
+# configs/model/legacy_nb_mu_r.yaml
+# TechNB_mu_r model configuration matching legacy implementation
+_target_: chipvi.models.technical_model.TechNB_mu_r
+covariate_dim: 5  # Number of covariates per replicate (MultiReplicateDataset)
+hidden_dims_mu: [64, 32]  # Hidden dimensions for mu prediction network
+hidden_dims_r: [32, 16]   # Hidden dimensions for r prediction network
+constrain_mu_log_out: false  # No log output constraint for legacy compatibility

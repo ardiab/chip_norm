@@ -8,6 +8,7 @@
 - **Feature:** Design and create dedicated Hydra configuration files for testing that include multi-component loss setup, minimal training parameters, disabled wandb, and paths configured for synthetic test data. (Task: `create_test_configs`)
 - **Feature:** Write the main end-to-end test that orchestrates the entire training pipeline by calling scripts/run.py with test configuration and verifies that the complete system works correctly from configuration parsing through training completion. (Task: `implement_e2e_test`)
 - **Feature:** Build a standalone script that converts legacy pickle data from {target}_data_v2 directories to the new .npy file format expected by MultiReplicateDataset. (Task: `create_legacy_data_converter`)
+- **Feature:** Create a comprehensive Hydra configuration that reproduces the exact training setup from the legacy 0729_run.py script. (Task: `create_legacy_experiment_config`)
 
 ## 2025-08-06
 

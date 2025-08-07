@@ -1,0 +1,96 @@
+# configs/experiment/legacy_reproduction.yaml
+# Complete reproduction of legacy 0729_run.py training setup
+# Includes composite loss, sequential scheduling, dual checkpointing, and W&B integration
+
+defaults:
+  - _self_
+  - /model: legacy_nb_mu_r
+  - /data: legacy_multi_replicate
+  - /wandb: default
+
+# Experiment metadata
+name: "legacy_reproduction"
+description: "Reproduction of legacy 0729_run.py training setup with configurable parameters"
+
+# Training parameters (matching legacy defaults)
+num_epochs: 100
+batch_size: 8192
+device: "cuda:0"
+learning_rate: 0.001
+weight_decay: 0.01
+patience: 10
+
+# Target data configuration (must be provided)
+target: ???  # Must be specified: which target dataset to use (e.g., GM12878, K562)
+
+# Log transform configuration (optional, matches legacy --log_transform_inputs flag)
+log_transform_inputs: false
+
+# Consistency loss configuration (can be overridden)
+consistency_loss_type: concordance_loss_nce  # Options: concordance_loss_nce, negative_pearson_loss, quantile_absolute_loss
+consistency_weight: 0.1
+
+# Model architecture overrides (can be further overridden via command line)
+model:
+  hidden_dims_mu: [64, 32]  # Can override with model.hidden_dims_mu=[128,64]
+  hidden_dims_r: [32, 16]   # Can override with model.hidden_dims_r=[64,32]
+
+# Data paths (expected by run.py script)
+output_prefix_train: "${target}_train"
+output_prefix_val: "${target}_val"
+
+# Data configuration for datasets
+data:
+  preprocessing:
+    log_transform:
+      enabled: false  # Can be overridden with log_transform_inputs=true
+      columns: [0, 5]
+
+# Composite loss function configuration matching legacy implementation
+loss_fn:
+  _target_: chipvi.training.losses.CompositeLoss
+  loss_functions:
+    - _target_: chipvi.training.losses.nll_loss
+      _partial_: true
+    - _target_: chipvi.training.losses.concordance_loss_nce_wrapper
+      _partial_: true
+  weights: 
+    - 1.0
+    - 0.1
+  component_names: 
+    - "nll"
+    - "consistency"
+
+# Optimizer configuration (AdamW as in legacy)
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 0.001
+  weight_decay: 0.01
+
+
+# Training configuration passed to Trainer
+trainer_config:
+  scheduler_config:
+    warmup_epochs: 2
+    scheduler_type: cosine
+  early_stopping_config:
+    patience: 10
+    monitor_metric: val_loss
+  max_grad_norm: 1.0
+  wandb_config:
+    enabled: true
+    project: chipvi
+    entity: null
+    name: "${name}_${target}_${consistency_loss_type}_log_${log_transform_inputs}"
+  checkpoint_config:
+    enabled: true
+    output_dir: ${hydra:run.dir}  # Use Hydra's output directory
+    strategies:
+      - metric_name: val_loss
+        mode: min
+        filename: best_loss.pt
+        overwrite: true
+      - metric_name: val_residual_spearman
+        mode: max
+        filename: best_corr.pt
+        overwrite: true

@@ -1,3 +1,5 @@
+**Reviewed & approved on 2025-08-07**
+
 # Task Document: Create Legacy Experiment Configuration
 
 **Task ID:** create_legacy_experiment_config
@@ -34,3 +36,12 @@ Create a comprehensive Hydra configuration that reproduces the exact training se
    f. Set up Weights & Biases integration with proper project and logging settings
    g. Configure data loading to use converted legacy data files
 4. **Ensure all tests are passing:** Run all tests to ensure that the configuration system is working correctly.
+5. **(REVIEW) Create missing model base configuration:** Create the file `configs/model/legacy_nb_mu_r.yaml` with the TechNB_mu_r model configuration. This should include `_target_: chipvi.models.technical_model.TechNB_mu_r` and configurable hidden dimensions for mu and r parameters matching the legacy implementation.
+6. **(REVIEW) Create missing data base configuration:** Create the file `configs/data/legacy_multi_replicate.yaml` with the multi-replicate dataset configuration. This should include appropriate `_target_` for the dataset class and any necessary data loading parameters for the legacy data format.
+7. **(REVIEW) Fix configuration duplication:** In `configs/experiment/legacy_reproduction.yaml`, eliminate duplication between top-level configuration keys (scheduler, wandb, checkpointing) and the trainer_config section. Keep only the trainer_config section and remove the redundant top-level keys.
+8. **(REVIEW) Verify configuration loading:** Run the test `test_legacy_config_loading` to ensure the legacy_reproduction configuration now loads successfully without errors.
+9. **(REVIEW) Run all tests:** Run `pytest tests/test_legacy_experiment_config.py -v` from the root directory and ensure all tests pass.
+
+## Completion Note
+
+Successfully implemented the legacy experiment configuration with comprehensive test coverage. The configuration (`configs/experiment/legacy_reproduction.yaml`) reproduces the exact training setup from the legacy `0729_run.py` script, including composite loss functions (NLL + consistency loss), sequential learning rate scheduling (warmup + cosine annealing), dual checkpointing strategies (best loss and best correlation), and Weights & Biases integration. Created supporting configuration files (`configs/model/legacy_nb_mu_r.yaml` and `configs/data/legacy_multi_replicate.yaml`) and eliminated configuration duplication by consolidating all trainer-related settings into the `trainer_config` section. All tests pass, confirming that the configuration loads successfully and can execute end-to-end training workflows.

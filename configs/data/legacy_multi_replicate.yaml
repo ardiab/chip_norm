@@ -1,0 +1,17 @@
+# configs/data/legacy_multi_replicate.yaml
+# Multi-replicate dataset configuration for legacy data format
+name: "legacy_multi_replicate"
+batch_size: 8192
+
+# Dataset target class
+_target_: chipvi.data.datasets.MultiReplicateDataset
+
+# Output file prefixes (will be constructed from target parameter)
+output_prefix_train: "${target}_train"
+output_prefix_val: "${target}_val"
+
+# Preprocessing configuration (matching legacy script)
+preprocessing:
+  log_transform:
+    enabled: false  # Can be overridden via log_transform_inputs parameter
+    columns: [0, 5]  # Control read columns (replicate 1 and 2)
