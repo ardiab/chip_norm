@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_config_extension.py -v)",
+      "Bash(python -m pytest tests/test_config_extension.py::TestConfigurationIntegration::test_wandb_config_files_exist tests/test_config_extension.py::TestConfigurationIntegration::test_experiment_config_loading -v)",
+      "Bash(mkdir:*)"
+    ],
+    "deny": []
+  }
+}

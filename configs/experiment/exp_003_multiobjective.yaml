@@ -1,0 +1,81 @@
+# configs/experiment/exp_003_multiobjective.yaml
+# Multi-objective experiment with multiple loss functions
+
+defaults:
+  - _self_
+  - /data: h3k27me3_200bp
+  - /model: nb_mu_r_small
+  - /wandb: default
+
+# Experiment identification
+name: "Multi-objective Loss Experiment"
+
+# Training configuration
+training:
+  num_epochs: 120
+  learning_rate: 0.0005      # Lower learning rate for more stable training with multiple losses
+  batch_size: 8192
+
+# Device configuration  
+device: "cuda:0"
+
+# Multi-objective loss configuration
+# Combines multiple loss functions with different weights
+loss:
+  _target_: chipvi.training.losses.CompositeLoss
+  loss_functions:
+    - _target_: chipvi.training.losses.nll_loss                      # Primary negative log-likelihood loss
+    - _target_: chipvi.training.losses.concordance_loss_nce_wrapper  # InfoNCE concordance loss for biological consistency
+    - _target_: chipvi.training.losses.negative_pearson_loss_wrapper # Pearson correlation loss for linear relationships
+    - _target_: chipvi.training.losses.quantile_absolute_loss_wrapper # Quantile loss for distribution shape matching
+  weights: [1.0, 0.1, 0.05, 0.05]
+  component_names: ["nll", "concordance", "pearson", "quantile"]
+
+# Scheduler configuration
+# More conservative scheduling for multi-objective optimization
+scheduler:
+  warmup_epochs: 10         # Longer warmup for stability
+  scheduler_type: cosine
+  total_epochs: ${training.num_epochs}
+
+# Early stopping configuration
+# More patient early stopping for complex loss landscape
+early_stopping:
+  patience: 20              # Wait longer due to complex loss interactions
+  monitor: val_loss         # Monitor total validation loss
+  mode: min
+
+# Gradient clipping configuration
+# More aggressive clipping for multi-objective gradients
+gradient_clipping:
+  max_norm: 0.5             # Tighter gradient clipping
+
+# Checkpointing strategies
+# Save models based on different component metrics
+checkpointing:
+  strategies:
+    - metric: val_loss
+      mode: min
+      filename: best_total_loss.pt
+      overwrite: true
+    - metric: val_residual_spearman
+      mode: max
+      filename: best_correlation.pt
+      overwrite: true
+    - metric: val_nll_loss    # Save best NLL model separately
+      mode: min
+      filename: best_nll.pt
+      overwrite: true
+
+# Preprocessing configuration
+# Enable log transformation for better numerical stability with multiple losses
+preprocessing:
+  log_transform:
+    enabled: true
+    columns: [0, 5, 10]       # Transform key covariate columns
+
+# W&B configuration for detailed tracking
+wandb:
+  group: "multiobjective_experiments"
+  tags: ["multiobjective", "composite_loss", "h3k27me3", "log_transform"]
+  notes: "Multi-objective optimization with NLL + concordance + Pearson + quantile losses"

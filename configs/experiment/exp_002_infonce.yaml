@@ -1,0 +1,59 @@
+# configs/experiment/exp_002_infonce.yaml
+# InfoNCE experiment with concordance loss for biological signal modeling
+
+defaults:
+  - _self_
+  - /data: h3k27me3_200bp
+  - /model: nb_mu_r_small
+  - /loss: composite_infonce
+  - /wandb: default
+
+# Experiment identification
+name: "InfoNCE Concordance Experiment"
+
+# Training configuration
+training:
+  num_epochs: 80
+  learning_rate: 0.002
+  batch_size: 8192
+
+# Device configuration
+device: "cuda:0"
+
+# Scheduler configuration
+# Reduces learning rate during training for better convergence
+scheduler:
+  warmup_epochs: 5          # Linear warmup for first 5 epochs
+  scheduler_type: cosine     # Cosine annealing after warmup
+  total_epochs: ${training.num_epochs}  # Reference training epochs
+
+# Early stopping configuration
+# Stops training if validation loss doesn't improve
+early_stopping:
+  patience: 15              # Wait 15 epochs without improvement
+  monitor: val_loss         # Monitor validation loss
+  mode: min                 # Stop when loss stops decreasing
+
+# Gradient clipping configuration
+# Prevents exploding gradients during training
+gradient_clipping:
+  max_norm: 1.0             # Clip gradients to max norm of 1.0
+
+# Checkpointing strategies
+# Save best models according to different metrics
+checkpointing:
+  strategies:
+    - metric: val_loss
+      mode: min
+      filename: best_loss.pt
+      overwrite: true
+    - metric: val_residual_spearman
+      mode: max
+      filename: best_correlation.pt
+      overwrite: true
+
+# W&B configuration for experiment tracking
+wandb:
+  group: "infonce_experiments"
+  tags: ["infonce", "concordance", "h3k27me3"]
+  notes: "InfoNCE loss experiment with biological replicate concordance"

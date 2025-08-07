@@ -10,3 +10,9 @@ val_chroms: ["chr8", "chr9"]
 # Output file prefixes (for preprocessed data)
 output_prefix_train: "h3k27me3_train_200bp"
 output_prefix_val: "h3k27me3_val_200bp"
+
+# Preprocessing configuration
+preprocessing:
+  log_transform:
+    enabled: false
+    columns: [0, 5]  # Which covariate columns to transform

@@ -301,3 +301,84 @@ class CompositeLoss(nn.Module):
             'total': total_loss,
             'components': loss_components
         }
+
+
+def nll_loss(model_outputs: dict, batch: dict) -> torch.Tensor:
+    """Compute negative log-likelihood loss for observed data given model predictions.
+    
+    This function computes the negative log-likelihood of the observed read counts
+    under the predicted Negative Binomial distribution parameters.
+    
+    Args:
+        model_outputs: Dictionary with structure {'r1': {'mu': ..., 'r': ...}, 'r2': {...}}
+                      or single replicate {'mu': ..., 'r': ...}
+        batch: Dictionary from dataset with observed read counts
+        
+    Returns:
+        Negative log-likelihood loss as scalar tensor
+    """
+    total_nll = 0.0
+    count = 0
+    
+    # Handle both single and multi-replicate cases
+    if 'r1' in model_outputs:
+        # Multi-replicate case
+        for replicate in ['r1', 'r2']:
+            if replicate in model_outputs and replicate in batch:
+                # Get model predictions
+                mu = model_outputs[replicate]['mu']
+                r = model_outputs[replicate]['r']
+                
+                # Get observed data
+                observed = batch[replicate]['reads']
+                
+                # Create Negative Binomial distribution
+                # Convert from (mu, r) parameterization to (total_count, probs)
+                total_count = r
+                probs = r / (mu + r)
+                
+                # Ensure parameters are valid
+                total_count = torch.clamp(total_count, min=1e-6)
+                probs = torch.clamp(probs, min=1e-6, max=1 - 1e-6)
+                
+                # Compute negative binomial distribution
+                nb_dist = torch.distributions.NegativeBinomial(
+                    total_count=total_count, 
+                    probs=probs
+                )
+                
+                # Compute negative log-likelihood
+                log_prob = nb_dist.log_prob(observed)
+                nll = -torch.mean(log_prob)
+                
+                total_nll += nll
+                count += 1
+    else:
+        # Single replicate case
+        mu = model_outputs['mu']
+        r = model_outputs['r']
+        observed = batch['reads']
+        
+        # Create Negative Binomial distribution
+        total_count = r
+        probs = r / (mu + r)
+        
+        # Ensure parameters are valid
+        total_count = torch.clamp(total_count, min=1e-6)
+        probs = torch.clamp(probs, min=1e-6, max=1 - 1e-6)
+        
+        # Compute negative binomial distribution
+        nb_dist = torch.distributions.NegativeBinomial(
+            total_count=total_count, 
+            probs=probs
+        )
+        
+        # Compute negative log-likelihood
+        log_prob = nb_dist.log_prob(observed)
+        nll = -torch.mean(log_prob)
+        
+        total_nll = nll
+        count = 1
+    
+    # Return average NLL across replicates
+    return total_nll / count if count > 0 else torch.tensor(0.0)

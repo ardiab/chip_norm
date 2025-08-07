@@ -6,3 +6,4 @@
 - **Feature:** Upgrade the Trainer class with professional training capabilities including learning rate scheduling, early stopping, gradient management, and experiment tracking. (Task: `enhance_trainer`)
 - **Feature:** Add advanced validation metrics and visualizations for model evaluation including Spearman correlations, Probability Integral Transform (PIT) analysis, and comprehensive plotting. (Task: `implement_validation_metrics`)
 - **Feature:** Implement a configurable multi-strategy checkpointing system that can save models based on various metrics and loss components. (Task: `add_checkpointing`)
+- **Feature:** Extend the Hydra configuration system to support composite losses, learning rate scheduling, W&B integration, flexible checkpointing strategies, and preprocessing options with clean, composable YAML configs. (Task: `extend_configuration`)

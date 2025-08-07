@@ -1,0 +1,5 @@
+# configs/loss/nll_only.yaml
+# Baseline negative log-likelihood loss configuration
+
+_target_: chipvi.training.losses.nll_loss
+_partial_: true
