@@ -59,7 +59,7 @@ You will follow this sequence precisely.
 
 *Step 0: Initialization & Pre-flight Check*
 1.  Read the task document provided by the user and understand it.
-2.  Check the `Blocked by:` section of the task document. For each listed blocker ID, verify that a corresponding file `docs/tasks/completed/{TASK_ID}.md` exists.
+2.  Check the `Blocked by:` section of the task document. For each listed blocker ID, verify that a corresponding file `docs/tasks/completed/{FEATURE_ID}-{#}_{TASK_ID}.md` exists.
 3.  If no blockers are found, continue. If any blocker is not found in the `completed` directory, **STOP IMMEDIATELY** and report the missing dependencies to the user. Ask the user whether to commence with implementation regardless, and await their response. If the user asks you to proceed, do so. Otherwise, terminate.
 4.  Read `docs/project_brief.md` and understand project context.
 5.  Enter IMPLEMENT_MODE.

@@ -39,7 +39,7 @@ These are the specific rules to follow when planning, writing, and reviewing cod
 *   **Documentation and Comments:**
     *   Provide Google-style docstrings for all public functions, methods, and classes. Keep them concise.
     *   Use `TODO:` comments to flag issues or areas for future improvement in existing code.
-    *   Favor self-documenting code over excessive inline comments.
+    *   Favor self-documenting code. Avoid inline comments except when needed for clarifying complex logic.
 *   **Code Structure:**
     *   Create focused, small functions, methods, and objects.
     *   Use early returns to reduce nested conditional logic.
@@ -50,3 +50,9 @@ These are the specific rules to follow when planning, writing, and reviewing cod
     *   Prefer functional, immutable approaches where they enhance clarity and reduce side effects.
 *   **Testing:**
     *   Use `pytest` for all unit tests.
+
+####  **5. Project Context**
+*Your Project-level Context Documents:*
+*   `docs/project_brief.md`: A high-level overview of the project’s purpose and goals, its architecture, and directory structure.
+*   `docs/tasks/`: Contains previously-generated Task Documents for the project.
+*   `docs/CHANGELOG.md`: A brief log detailing changes made to the project over time.
