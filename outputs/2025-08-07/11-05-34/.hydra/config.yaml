@@ -1,0 +1,55 @@
+paths:
+  project_root: ${hydra:runtime.cwd}
+  data_base: /tmp/tmpx1r3n1bc
+  data_raw: ${paths.data_base}/raw
+  data_processed: ${paths.data_base}/processed
+  entex_base: ${paths.data_base}/entex_files
+  entex_raw: ${paths.entex_base}/raw
+  entex_processed: ${paths.entex_base}/proc
+  outputs: ${hydra:run.dir}
+experiment:
+  name: test_data
+  num_epochs: 3
+  learning_rate: 0.001
+  weight_decay: 0.01
+  patience: 10
+  device: cuda:0
+  batch_size: 32
+  loss_fn:
+    losses:
+    - nll
+    - concordance
+    weights:
+    - 0.8
+    - 0.2
+  paths:
+    data_base: ${oc.env:TEST_DATA_DIR,/tmp/test_data}
+    data_processed: ${paths.data_base}/processed
+    data_raw: ${paths.data_base}/raw
+  train_chroms:
+  - chr21
+  - chr22
+  val_chroms:
+  - chr22
+  output_prefix_train: test_train_200bp
+  output_prefix_val: test_val_200bp
+  model:
+    _target_: chipvi.models.technical_model.TechNB_mu_r
+    covariate_dim: 5
+    hidden_dims_mu:
+    - 16
+    - 16
+    hidden_dims_r:
+    - 8
+    - 8
+  wandb:
+    enabled: false
+    project: chipvi_test
+    entity: null
+    tags:
+    - test
+    - e2e
+    notes: Test configuration with disabled WandB
+num_epochs: 2
+batch_size: 16
+device: cpu

@@ -72,10 +72,11 @@ def generate_multi_replicate_data(
     experiment_seq_depth_r1 = np.random.uniform(10_000_000, 50_000_000, size=n_samples).astype(np.float32)
     
     # Generate replicate 2 data (correlated but with some noise)
-    control_reads_r2 = (control_reads_r1 * np.random.uniform(0.8, 1.2, size=n_samples)).astype(np.float32)
+    # Keep reads as integers by rounding after scaling
+    control_reads_r2 = np.round(control_reads_r1 * np.random.uniform(0.8, 1.2, size=n_samples)).astype(np.float32)
     control_mapq_r2 = np.random.uniform(20, 60, size=n_samples).astype(np.float32)  
     control_seq_depth_r2 = np.random.uniform(10_000_000, 50_000_000, size=n_samples).astype(np.float32)
-    experiment_reads_r2 = (experiment_reads_r1 * np.random.uniform(0.8, 1.2, size=n_samples)).astype(np.float32)
+    experiment_reads_r2 = np.round(experiment_reads_r1 * np.random.uniform(0.8, 1.2, size=n_samples)).astype(np.float32)
     experiment_mapq_r2 = np.random.uniform(20, 60, size=n_samples).astype(np.float32)
     experiment_seq_depth_r2 = np.random.uniform(10_000_000, 50_000_000, size=n_samples).astype(np.float32)
     

@@ -33,6 +33,9 @@ def get_torch_nb_dist(
             raise ValueError("mu must be non-negative.")
 
         p = r / (r + mu)
+        # Clamp p to be within valid range (0, 1) exclusive
+        eps = 1e-6
+        p = torch.clamp(p, min=eps, max=1.0 - eps)
         return D.NegativeBinomial(
             total_count=r.squeeze(),
             probs=p.squeeze(),

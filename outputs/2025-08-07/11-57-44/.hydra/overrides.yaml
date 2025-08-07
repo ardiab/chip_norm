@@ -1,0 +1,8 @@
+- experiment=test_e2e
+- paths.data_base=/tmp/tmph4l3njmr
+- +num_epochs=3
+- +batch_size=16
+- +device=cpu
+- experiment.learning_rate=0.001
+- experiment.loss_fn.losses=[nll,concordance]
+- experiment.loss_fn.weights=[0.8,0.2]

@@ -62,7 +62,20 @@ class TechNB_mu_r(nn.Module):
         g_input = torch.cat((log_mu_tech, x_i), dim=1)
         log_r_tech = self.g(g_input)
 
-        return torch.exp(log_mu_tech), torch.exp(log_r_tech)
+        # Clamp log values to prevent numerical instability
+        # Prevent extreme values that would cause exp() to return 0 or inf
+        eps = 1e-8
+        log_mu_tech = torch.clamp(log_mu_tech, min=-20, max=20)
+        log_r_tech = torch.clamp(log_r_tech, min=-20, max=20)
+        
+        mu_tech = torch.exp(log_mu_tech)
+        r_tech = torch.exp(log_r_tech)
+        
+        # Additional clamping on the actual parameters to ensure valid range
+        mu_tech = torch.clamp(mu_tech, min=eps, max=1e6)
+        r_tech = torch.clamp(r_tech, min=eps, max=1e6)
+
+        return mu_tech, r_tech
     
     def predict_dist(
         self,

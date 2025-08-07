@@ -1,0 +1,6 @@
+- experiment=test_e2e
+- paths.data_base=/tmp/tmpkz1a266a
+- +num_epochs=2
+- +batch_size=8
+- +device=cpu
+- '+checkpointing.strategies=[{metric: val_loss, mode: min, filename: best_model.pt}]'
