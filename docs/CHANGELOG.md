@@ -5,6 +5,7 @@
 - **Feature:** Create mock infrastructure for Weights & Biases (wandb) that intercepts all wandb API calls during testing. (Task: `create_wandb_mock`)
 - **Feature:** Implement a minimal, lightweight model class for CPU-based testing that uses simple linear layers instead of complex MLPs while maintaining the same interface as TechNB_mu_r. (Task: `create_minimal_model`)
 - **Feature:** Build utility functions to generate small synthetic datasets in the expected .npy file format for testing purposes. (Task: `create_synthetic_data_generator`)
+- **Feature:** Design and create dedicated Hydra configuration files for testing that include multi-component loss setup, minimal training parameters, disabled wandb, and paths configured for synthetic test data. (Task: `create_test_configs`)
 
 ## 2025-08-06
 

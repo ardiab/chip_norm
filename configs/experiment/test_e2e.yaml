@@ -1,0 +1,37 @@
+# configs/experiment/test_e2e.yaml
+# End-to-end test configuration for fast testing with minimal resources
+
+defaults:
+  - _self_
+  - /model: test/model_test
+  - /wandb: test/wandb_test
+
+# Minimal training parameters for fast testing
+num_epochs: 3
+learning_rate: 0.001
+weight_decay: 0.01
+patience: 10
+device: "cuda:0"
+batch_size: 32
+
+# Multi-component loss configuration with named components
+loss_fn:
+  losses:
+    [
+      "nll", 
+      "concordance"
+    ]
+  weights: [0.8, 0.2]
+
+# Test data configuration - paths can be overridden
+name: "test_data"
+paths:
+  data_base: ${oc.env:TEST_DATA_DIR,/tmp/test_data}
+  data_processed: ${paths.data_base}/processed
+  data_raw: ${paths.data_base}/raw
+
+# Test-specific data parameters
+train_chroms: ["chr21", "chr22"]  # Small chromosomes for testing
+val_chroms: ["chr22"]
+output_prefix_train: "test_train_200bp"
+output_prefix_val: "test_val_200bp"

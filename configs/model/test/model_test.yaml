@@ -1,0 +1,7 @@
+# configs/model/test/model_test.yaml
+# Minimal model configuration for testing
+
+_target_: chipvi.models.technical_model.TechNB_mu_r
+covariate_dim: 5 # This will be overridden by data config
+hidden_dims_mu: [16, 16]  # Very small hidden layers for fast testing
+hidden_dims_r: [8, 8]     # Very small hidden layers for fast testing
